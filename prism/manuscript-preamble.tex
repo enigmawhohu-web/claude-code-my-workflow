@@ -1,0 +1,87 @@
+% manuscript-preamble.tex — Chicago Author-Date manuscript preamble
+% Shared preamble for manuscript and potential slide reuse
+
+% --- Fonts ---
+% Support both PdfLaTeX and Xe/LuaLaTeX.
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{newtxtext}
+  \usepackage{newtxmath}
+\else
+  \usepackage{fontspec}
+  \setmainfont{Times New Roman}[Ligatures=TeX]
+\fi
+
+% --- Layout ---
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\doublespacing
+
+% --- Math & symbols ---
+\usepackage{amsmath}
+\ifPDFTeX
+  % newtxmath already provides most AMS-style symbols under PdfLaTeX
+\else
+  \usepackage{amssymb}
+\fi
+
+% --- Tables ---
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{dcolumn}
+
+% --- Figures ---
+\usepackage{graphicx}
+\usepackage{float}
+
+% --- Citations (Chicago Author-Date via biblatex-chicago) ---
+% Compile: xelatex -> biber -> xelatex -> xelatex
+\usepackage[
+  authordate,
+  backend=biber,
+  natbib=true,
+  url=true,
+  doi=true,
+  isbn=false
+]{biblatex-chicago}
+\addbibresource{references.bib}
+
+% --- Cross-references & links ---
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue,
+  pdfauthor={},
+  pdftitle={Issue-Bounded Conditionality in U.S. Public Opinion on Fentanyl Policy}
+}
+
+% --- Appendix support ---
+\usepackage[toc,page]{appendix}
+
+% --- Landscape pages for wide tables ---
+\usepackage{pdflscape}
+
+% --- Misc ---
+\usepackage{enumerate}
+\usepackage{etoolbox}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,hypcap=false}
+
+% --- Prevent doublespacing inside tables ---
+\AtBeginEnvironment{tabular}{\singlespacing}
+\AtBeginEnvironment{longtable}{\singlespacing}
+
+% --- Reduce noisy line-breaking diagnostics ---
+\hbadness=10000
+\hfuzz=200pt
+
+
+\vbadness=10000
+\vfuzz=500pt
