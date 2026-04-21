@@ -1,0 +1,13 @@
+Outcome,Predictor,Estimate,Design SE,t-value,p-value,Stars
+Sanctions-only,warmth_z,0.0474,0.0619,0.766,0.4439,
+Action-only,warmth_z,0.0632,0.1016,0.622,0.5342,
+S+A,warmth_z,-0.2269,0.1018,-2.228,0.0259,*
+Sanctions-only,blame_china,0.8045,0.0927,8.676,0,***
+Action-only,blame_china,1.6519,0.1314,12.572,0,***
+S+A,blame_china,2.6398,0.113,23.353,0,***
+Sanctions-only,factor(year)2025,-0.2426,0.0871,-2.785,0.0054,**
+Action-only,factor(year)2025,-0.0559,0.1191,-0.469,0.6391,
+S+A,factor(year)2025,-0.1267,0.0922,-1.373,0.1697,
+Sanctions-only,warmth_z:blame_china,-0.1927,0.0894,-2.154,0.0313,*
+Action-only,warmth_z:blame_china,-0.1546,0.1257,-1.23,0.2189,
+S+A,warmth_z:blame_china,0.1343,0.1143,1.175,0.2402,

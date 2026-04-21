@@ -1,0 +1,5 @@
+dropped_alternative,chi_squared,df,p_value,result
+Neither,1017.5585238797503,36,3.270650403388678e-190,Reject IIA (alt has distinctive effects)
+Sanctions-only,19.401791363362225,36,0.9891585930717129,Fail to reject IIA
+Action-only,-3.460515504904008,36,1,Fail to reject IIA
+S+A,1257.5052398264593,36,9.3579175302114e-241,Reject IIA (alt has distinctive effects)

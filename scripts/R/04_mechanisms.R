@@ -13,14 +13,14 @@
 #'
 #' @input  data/clean/pooled.rds, data/clean/clean_2024.rds,
 #'         data/clean/clean_2025.rds
-#' @output output/tables/tab3_phase4_estimands (.tex + .csv)
-#'         output/tables/app_tab_phase4_mnl_coefficients (.tex + .csv)
-#'         output/tables/app_tab_phase4_acquiescence (.tex + .csv)
-#'         output/tables/app_tab_placebo_models (.tex + .csv)
-#'         output/figures/fig3_tool_config_warmthXblame.pdf
-#'         output/figures/app_fig_placebo_sanctionsXintlcoop.pdf
-#'         output/tables/phase4_objects.rds
-#'         output/tables/phase4_log.txt
+#' @output prism/tables/tab3_phase4_estimands (.tex + .csv)
+#'         prism/tables/app_tab_phase4_mnl_coefficients (.tex + .csv)
+#'         prism/tables/app_tab_phase4_acquiescence (.tex + .csv)
+#'         prism/tables/app_tab_placebo_models (.tex + .csv)
+#'         prism/figures/fig3_tool_config_warmthXblame.pdf
+#'         prism/figures/app_fig_placebo_sanctionsXintlcoop.pdf
+#'         prism/tables/phase4_objects.rds
+#'         prism/tables/phase4_log.txt
 #'
 #' @depends here, tidyverse, survey, srvyr, nnet, kableExtra, scales,
 #'          marginaleffects, texreg, broom
@@ -40,8 +40,8 @@ library(texreg)
 
 set.seed(20250217)
 
-dir.create(here("output", "tables"), recursive = TRUE, showWarnings = FALSE)
-dir.create(here("output", "figures"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here("prism", "tables"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here("prism", "figures"), recursive = TRUE, showWarnings = FALSE)
 
 # Environment-based logging (same pattern as 01/02/03)
 log_env <- new.env(parent = emptyenv())
@@ -80,10 +80,8 @@ tool_colors <- c(
 #' Custom ggplot2 theme for PAX sapiens publications
 #' @param base_size Base font size (default 14)
 theme_pax <- function(base_size = 14) {
-  theme_minimal(base_size = base_size) +
+  theme_minimal(base_size = base_size, base_family = "serif") +
     theme(
-      plot.title    = element_text(face = "bold", size = base_size + 2),
-      plot.subtitle = element_text(color = neutral_gray),
       legend.position = "bottom",
       panel.grid.minor = element_blank(),
       strip.text = element_text(face = "bold")
@@ -93,14 +91,12 @@ theme_pax <- function(base_size = 14) {
 #' Save a table as LaTeX (.tex) and CSV (.csv)
 #' @param tbl_df Tibble or data frame
 #' @param name File stem (no extension)
-#' @param caption LaTeX table caption
-save_table <- function(tbl_df, name, caption = "") {
-  csv_path <- here("output", "tables", paste0(name, ".csv"))
+save_table <- function(tbl_df, name) {
+  csv_path <- here("prism", "tables", paste0(name, ".csv"))
   write_csv(tbl_df, csv_path)
-  tex_path <- here("output", "tables", paste0(name, ".tex"))
+  tex_path <- here("prism", "tables", paste0(name, ".tex"))
   latex_out <- tbl_df %>%
-    kbl(format = "latex", booktabs = TRUE, caption = caption, linesep = "") %>%
-    kable_styling(latex_options = c("hold_position"))
+    kbl(format = "latex", booktabs = TRUE, caption = NULL, linesep = "")
   writeLines(as.character(latex_out), tex_path)
   log_msg(sprintf("  Saved: %s.tex + %s.csv", name, name))
 }
@@ -110,8 +106,8 @@ save_table <- function(tbl_df, name, caption = "") {
 #' @param name File stem (no extension)
 #' @param w Width in inches (default 6.5)
 #' @param h Height in inches (default 4.5)
-save_figure <- function(plot, name, w = 6.5, h = 4.5, bg = "white") {
-  pdf_path <- here("output", "figures", paste0(name, ".pdf"))
+save_figure <- function(plot, name, w = 6.5, h = 4.5, bg = "transparent") {
+  pdf_path <- here("prism", "figures", paste0(name, ".pdf"))
   dev <- tryCatch({
     tf <- tempfile(fileext = ".pdf")
     on.exit(unlink(tf), add = TRUE)
@@ -133,15 +129,31 @@ get_mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
+#' Format p-value with significance stars
+#' @param p Numeric p-value
+#' @return Character string with formatted p and stars
+fmt_p <- function(p) {
+  stars <- case_when(
+    is.na(p)  ~ "",
+    p < 0.001 ~ "***",
+    p < 0.01  ~ "**",
+    p < 0.05  ~ "*",
+    TRUE      ~ ""
+  )
+  em_dash <- intToUtf8(0x2014)
+  ifelse(is.na(p), em_dash,
+         paste0(formatC(p, format = "f", digits = 3), stars))
+}
+
 
 # --- Section 1: Load Data & Construct Variables ------------------------------
 
 log_msg("")
 log_msg("--- Section 1: Load Data & Construct Variables ---")
 
-pooled     <- readRDS(here("data", "clean", "pooled.rds"))
-clean_2024 <- readRDS(here("data", "clean", "clean_2024.rds"))
-clean_2025 <- readRDS(here("data", "clean", "clean_2025.rds"))
+pooled     <- readRDS(here("data", "cleaned", "pooled.rds"))
+clean_2024 <- readRDS(here("data", "cleaned", "clean_2024.rds"))
+clean_2025 <- readRDS(here("data", "cleaned", "clean_2025.rds"))
 log_msg(sprintf("  Loaded: pooled=%d, 2024=%d, 2025=%d",
                 nrow(pooled), nrow(clean_2024), nrow(clean_2025)))
 
@@ -287,9 +299,9 @@ build_n_approaches <- function(df) {
     x <- as.numeric(df[[v]])
     ifelse(is.na(x), NA_integer_, ifelse(x == 1, 1L, 0L))
   })
-  df$n_approaches_main <- rowSums(approach_bins, na.rm = FALSE)
-  df$n_approaches_miss <- as.integer(rowSums(is.na(approach_bins)) > 0)
-  df$n_approaches_zero <- rowSums(
+  df$n_approaches_10 <- rowSums(approach_bins, na.rm = FALSE)
+  df$n_approaches_10_miss <- as.integer(rowSums(is.na(approach_bins)) > 0)
+  df$n_approaches_10_zero <- rowSums(
     replace(approach_bins, is.na(approach_bins), 0L), na.rm = TRUE
   )
   df
@@ -300,17 +312,17 @@ clean_2024 <- build_n_approaches(clean_2024)
 clean_2025 <- build_n_approaches(clean_2025)
 
 # Audit n_approaches
-for (v in c("n_approaches_main", "n_approaches_miss", "n_approaches_zero")) {
+for (v in c("n_approaches_10", "n_approaches_10_miss", "n_approaches_10_zero")) {
   vals <- na.omit(as.numeric(pooled[[v]]))
   log_msg(sprintf("    %s: n=%d, NAs=%d, range=[%.0f, %.0f], mean=%.3f",
                   v, length(vals), sum(is.na(pooled[[v]])),
                   min(vals), max(vals), mean(vals)))
 }
-log_msg(sprintf("    Pct with n_approaches_miss=1: %.1f%%",
-                100 * mean(pooled$n_approaches_miss, na.rm = TRUE)))
+log_msg(sprintf("    Pct with n_approaches_10_miss=1: %.1f%%",
+                100 * mean(pooled$n_approaches_10_miss, na.rm = TRUE)))
 log_msg("    n_approaches excludes approach_sanctions and approach_china_action (DV components).")
-if (mean(pooled$n_approaches_miss, na.rm = TRUE) == 0) {
-  log_msg("    NOTE: No missingness in approach items. n_approaches_main == n_approaches_zero.")
+if (mean(pooled$n_approaches_10_miss, na.rm = TRUE) == 0) {
+  log_msg("    NOTE: No missingness in approach items. n_approaches_10 == n_approaches_10_zero.")
   log_msg("    The three-variant acquiescence comparison reduces to baseline vs +n_approaches.")
 }
 
@@ -380,8 +392,8 @@ log_msg("")
 log_msg("--- Section 3: Controls Formula ---")
 
 ctrl_rhs <- "party3 + ideo5_clean + educ_college + age + female + race_eth + newsint_attn + exposure_index + posture_z"
-ctrl_rhs_acq1 <- paste0(ctrl_rhs, " + n_approaches_main + n_approaches_miss")
-ctrl_rhs_acq2 <- paste0(ctrl_rhs, " + n_approaches_zero")
+ctrl_rhs_acq1 <- paste0(ctrl_rhs, " + n_approaches_10 + n_approaches_10_miss")
+ctrl_rhs_acq2 <- paste0(ctrl_rhs, " + n_approaches_10_zero")
 
 # Listwise deletion counts
 model_vars_base <- c("tool_config", "warmth_z", "blame_china", "party3",
@@ -592,8 +604,8 @@ if (nrow(fig3_data) > 0) {
     scale_fill_manual(values = tool_colors, name = "Tool Configuration") +
     scale_y_continuous(labels = percent_format(), limits = c(0, NA)) +
     labs(
-      title = "Predicted Tool Configuration by Warmth, Blame, and Year",
-      subtitle = "Multinomial logit; controls at medians/modes",
+      title = NULL,
+      subtitle = NULL,
       x = "Warmth toward China (z-score)",
       y = "Predicted Probability"
     ) +
@@ -805,8 +817,7 @@ if (!is.null(key_estimands)) {
     ) %>%
     select(Estimand = estimand, Estimate = estimate, SE = std.error, `95% CI` = CI)
 
-  save_table(est_display, "tab3_phase4_estimands",
-             caption = "Phase 4 Key Estimands: Predicted Probabilities and Blame Effects")
+  save_table(est_display, "tab3_phase4_estimands")
 } else {
   log_msg("  WARNING: key_estimands not available; skipping Table 3")
 }
@@ -828,13 +839,11 @@ if (!is.null(mpool)) {
     mod_names <- c(mod_names, "2025")
   }
 
-  tex_path <- here("output", "tables", "app_tab_phase4_mnl_coefficients.tex")
+  tex_path <- here("prism", "tables", "app_tab_phase4_mnl_coefficients.tex")
   tryCatch(
     texreg(mod_list,
            custom.model.names = mod_names,
-           caption = "Multinomial Logit Coefficients: Tool Configuration (Appendix)",
-           label = "tab:phase4_mnl_coefs",
-           float.pos = "htbp",
+           table = FALSE,
            use.packages = FALSE,
            file = tex_path),
     error = function(e) log_msg(sprintf("  texreg failed: %s", e$message))
@@ -853,7 +862,7 @@ if (!is.null(mpool)) {
   }
   if (length(csv_rows) > 0) {
     csv_out <- bind_rows(csv_rows)
-    write_csv(csv_out, here("output", "tables",
+    write_csv(csv_out, here("prism", "tables",
                             "app_tab_phase4_mnl_coefficients.csv"))
     log_msg("  Saved: app_tab_phase4_mnl_coefficients.csv")
   }
@@ -884,10 +893,10 @@ if (!is.null(key_estimands)) {
   }
 }
 
-# Variant 1: + n_approaches_main + n_approaches_miss
+# Variant 1: + n_approaches_10 + n_approaches_10_miss
 mpool_acq1 <- run_multinomial(pooled, ctrl_rhs_acq1, include_year_fe = TRUE)
 if (!is.null(mpool_acq1)) {
-  log_msg("  mpool_acq1 (+ n_approaches_main + miss): OK")
+  log_msg("  mpool_acq1 (+ n_approaches_10 + miss): OK")
   for (wz in c(-1, 1)) {
     comps_acq1 <- tryCatch(
       comparisons(mpool_acq1, variables = "blame_china",
@@ -910,10 +919,10 @@ if (!is.null(mpool_acq1)) {
   log_msg("  mpool_acq1: FAILED")
 }
 
-# Variant 2: + n_approaches_zero
+# Variant 2: + n_approaches_10_zero
 mpool_acq2 <- run_multinomial(pooled, ctrl_rhs_acq2, include_year_fe = TRUE)
 if (!is.null(mpool_acq2)) {
-  log_msg("  mpool_acq2 (+ n_approaches_zero): OK")
+  log_msg("  mpool_acq2 (+ n_approaches_10_zero): OK")
   for (wz in c(-1, 1)) {
     comps_acq2 <- tryCatch(
       comparisons(mpool_acq2, variables = "blame_china",
@@ -953,8 +962,7 @@ if (length(acq_results) > 0) {
                           collapse = ", ")))
   }
 
-  save_table(acq_wide, "app_tab_phase4_acquiescence",
-             caption = "Acquiescence Robustness: Blame Effect on P(S+A) With/Without Endorsement Controls")
+  save_table(acq_wide, "app_tab_phase4_acquiescence")
 
   # Data-driven acquiescence conclusion
   acq_baseline_wp1 <- acq_df %>% filter(variant == "Baseline", warmth_z == 1) %>% pull(Dpp_SA) %>% first()
@@ -1039,6 +1047,9 @@ if (!is.null(mpool_placebo)) {
     dpp_placebo_pair <- pc_df %>%
       filter(group == "Sanctions+IntlCoop") %>%
       pull(estimate) %>% first()
+    dpp_placebo_pair_se <- pc_df %>%
+      filter(group == "Sanctions+IntlCoop") %>%
+      pull(std.error) %>% first()
     dpp_primary_pair <- if (!is.null(key_estimands)) {
       key_estimands %>% filter(estimand == "Dpp_SA_w+1") %>%
         pull(estimate) %>% first()
@@ -1144,8 +1155,8 @@ if (!is.null(mpool_placebo)) {
       scale_fill_manual(values = placebo_colors, name = "Tool Config (Placebo)") +
       scale_y_continuous(labels = percent_format(), limits = c(0, NA)) +
       labs(
-        title = "Placebo: Sanctions x Intl Cooperation (Appendix)",
-        subtitle = "Multinomial logit; pooled + year FE; controls at medians/modes",
+        title = NULL,
+        subtitle = NULL,
         x = "Warmth toward China (z-score)",
         y = "Predicted Probability"
       ) +
@@ -1163,21 +1174,148 @@ if (!is.null(mpool_placebo)) {
 
   # Placebo coefficient table
   tryCatch({
-    tex_pl <- here("output", "tables", "app_tab_placebo_models.tex")
+    tex_pl <- here("prism", "tables", "app_tab_placebo_models.tex")
     texreg(list(mpool_placebo),
            custom.model.names = "Placebo (Pooled)",
-           caption = "Placebo Pairing: Sanctions x International Cooperation (Appendix)",
-           label = "tab:phase4_placebo",
-           float.pos = "htbp",
+           table = FALSE,
            use.packages = FALSE,
            file = tex_pl)
     log_msg("  Saved: app_tab_placebo_models.tex")
 
     tidy_pl <- broom::tidy(mpool_placebo, conf.int = TRUE) %>%
       mutate(model = "Placebo (Pooled)")
-    write_csv(tidy_pl, here("output", "tables", "app_tab_placebo_models.csv"))
+    write_csv(tidy_pl, here("prism", "tables", "app_tab_placebo_models.csv"))
     log_msg("  Saved: app_tab_placebo_models.csv")
   }, error = function(e) log_msg(sprintf("  Placebo table export failed: %s", e$message)))
+
+  # --- M-1: Placebo predicted-probability grid (full warmth x blame surface) ---
+  log_msg("")
+  log_msg("  M-1: Placebo predicted-probability grid (warmth x blame)")
+
+  placebo_outcomes <- c("Neither", "Sanctions-only",
+                        "IntlCoop-only", "Sanctions+IntlCoop")
+
+  placebo_grid_table <- tryCatch({
+    grid_pl_mp <- datagrid(
+      warmth_z    = c(-1, 0, 1),
+      blame_china = c(0, 1),
+      model       = mpool_placebo
+    )
+    preds_grid <- predictions(mpool_placebo, newdata = grid_pl_mp,
+                              type = "probs")
+    preds_df <- as.data.frame(preds_grid)
+
+    # Blame contrasts (Delta = blame=1 - blame=0) across warmth and outcome
+    comps_grid <- comparisons(
+      mpool_placebo,
+      variables = "blame_china",
+      newdata   = datagrid(warmth_z = c(-1, 0, 1), model = mpool_placebo),
+      type      = "probs"
+    )
+    comps_df <- as.data.frame(comps_grid)
+
+    rows <- list()
+    for (g in placebo_outcomes) {
+      for (wz in c(-1, 0, 1)) {
+        p_b0 <- preds_df %>%
+          filter(group == g, abs(warmth_z - wz) < 1e-8, blame_china == 0) %>%
+          pull(estimate) %>% first()
+        p_b1 <- preds_df %>%
+          filter(group == g, abs(warmth_z - wz) < 1e-8, blame_china == 1) %>%
+          pull(estimate) %>% first()
+        comp_row <- comps_df %>%
+          filter(group == g, abs(warmth_z - wz) < 1e-8)
+        d_est <- if (nrow(comp_row) >= 1) comp_row$estimate[1] else NA_real_
+        d_se  <- if (nrow(comp_row) >= 1) comp_row$std.error[1] else NA_real_
+        d_p   <- if (nrow(comp_row) >= 1) comp_row$p.value[1]  else NA_real_
+        rows[[length(rows) + 1]] <- tibble(
+          Outcome    = g,
+          `Warmth`   = sprintf("%+d", as.integer(wz)),
+          `P(y|blame=0)` = ifelse(is.na(p_b0), "—", sprintf("%.4f", p_b0)),
+          `P(y|blame=1)` = ifelse(is.na(p_b1), "—", sprintf("%.4f", p_b1)),
+          `Delta`       = ifelse(is.na(d_est), "—", sprintf("%.4f", d_est)),
+          `SE(Delta)`   = ifelse(is.na(d_se),  "—", sprintf("%.4f", d_se)),
+          `p-value`     = fmt_p(d_p)
+        )
+      }
+    }
+    bind_rows(rows)
+  }, error = function(e) {
+    log_msg(sprintf("  M-1 grid computation FAILED: %s", e$message))
+    NULL
+  })
+
+  if (!is.null(placebo_grid_table) && nrow(placebo_grid_table) > 0) {
+    save_table(placebo_grid_table, "app_tab_placebo_grid")
+
+    # Log placebo Delta trajectory for "Sanctions+IntlCoop" and compare to primary
+    sa_plus_rows <- placebo_grid_table %>%
+      filter(Outcome == "Sanctions+IntlCoop")
+    if (nrow(sa_plus_rows) > 0) {
+      log_msg("    Placebo Delta trajectory for Sanctions+IntlCoop:")
+      for (i in seq_len(nrow(sa_plus_rows))) {
+        log_msg(sprintf("      warmth=%s: Delta=%s, SE=%s, p=%s",
+                        sa_plus_rows$Warmth[i],
+                        sa_plus_rows$Delta[i],
+                        sa_plus_rows$`SE(Delta)`[i],
+                        sa_plus_rows$`p-value`[i]))
+      }
+    }
+
+    # Compare to primary Delta(S+A) from key_estimands at w=-1 and w=+1
+    if (!is.null(key_estimands)) {
+      for (wz in c(-1, 1)) {
+        tag <- sprintf("Dpp_SA_w%+d", wz)
+        row <- key_estimands %>% filter(estimand == tag)
+        if (nrow(row) == 1) {
+          log_msg(sprintf("    Primary Delta(S+A) at warmth=%+d: %.4f (SE=%.4f)",
+                          wz, row$estimate[1], row$std.error[1]))
+        }
+      }
+      log_msg("    NOTE: Primary grid (key_estimands) evaluated at warmth in {-1, +1}; placebo grid evaluated at {-1, 0, +1}. Compare placebo Delta trajectory qualitatively.")
+    } else {
+      log_msg("    Primary grid not available at all warmth levels; compare placebo Delta trajectory qualitatively.")
+    }
+  }
+
+  # --- M-1 (cont.): Acquiescence-adjusted placebo variant ---
+  log_msg("")
+  log_msg("  M-1: Acquiescence-adjusted placebo (+ n_approaches_10 + n_approaches_10_miss)")
+  fmla_placebo_acq <- as.formula(
+    paste0("placebo_tool_config ~ warmth_z * blame_china + ", ctrl_rhs_acq1, " + factor(year)")
+  )
+  placebo_acq_vars <- all.vars(fmla_placebo_acq)
+  pooled_placebo_acq_complete <- pooled[complete.cases(pooled[, placebo_acq_vars, drop = FALSE]), ]
+  mpool_placebo_acq <- tryCatch(
+    multinom(fmla_placebo_acq, data = pooled_placebo_acq_complete, weights = weight,
+             MaxNWts = 5000, maxit = 500, trace = FALSE),
+    error = function(e) { log_msg(sprintf("  mpool_placebo_acq error: %s", e$message)); NULL }
+  )
+  if (!is.null(mpool_placebo_acq)) {
+    log_msg(sprintf("  mpool_placebo_acq: n=%d, converged=%s",
+                    nrow(pooled_placebo_acq_complete),
+                    ifelse(mpool_placebo_acq$convergence %in% c(0L, 0), "YES", "NO")))
+    coef_pa <- coef(mpool_placebo_acq)
+    sa_row  <- "Sanctions+IntlCoop"
+    if (sa_row %in% rownames(coef_pa)) {
+      wb_col <- grep("warmth_z:blame_china", colnames(coef_pa), value = TRUE)
+      if (length(wb_col) == 1) {
+        wb_acq <- coef_pa[sa_row, wb_col]
+        log_msg(sprintf("  Placebo acq-adjusted warmth*blame (S+IntlCoop): %.4f", wb_acq))
+        if (!is.null(mpool_placebo)) {
+          coef_pl <- coef(mpool_placebo)
+          if (sa_row %in% rownames(coef_pl) && wb_col %in% colnames(coef_pl)) {
+            wb_unadj <- coef_pl[sa_row, wb_col]
+            log_msg(sprintf("  Placebo unadjusted warmth*blame (S+IntlCoop):     %.4f", wb_unadj))
+            log_msg(sprintf("  Acquiescence attenuation: %.1f%%",
+                            100 * (wb_unadj - wb_acq) / abs(wb_unadj)))
+          }
+        }
+      }
+    }
+  } else {
+    log_msg("  mpool_placebo_acq: model failed")
+  }
 
 } else {
   log_msg("  Placebo model FAILED; skipping figure and table")
@@ -1329,6 +1467,8 @@ phase4_objects <- list(
   mpool = mpool, m24 = m24, m25 = m25,
   mpool_acq1 = mpool_acq1, mpool_acq2 = mpool_acq2,
   mpool_placebo = mpool_placebo,
+  dpp_placebo_pair     = if (exists("dpp_placebo_pair"))     dpp_placebo_pair     else NA_real_,
+  dpp_placebo_pair_se  = if (exists("dpp_placebo_pair_se"))  dpp_placebo_pair_se  else NA_real_,
   fig3_data = fig3_data,
   key_estimands = key_estimands,
   interpretation = interp,
@@ -1336,23 +1476,23 @@ phase4_objects <- list(
   posture_moments = c(mu = posture_mu, sd = posture_sd),
   tool_config_dist = table(pooled$tool_config, pooled$year)
 )
-saveRDS(phase4_objects, here("output", "tables", "phase4_objects.rds"))
+saveRDS(phase4_objects, here("prism", "tables", "phase4_objects.rds"))
 log_msg("  Saved: phase4_objects.rds")
 
 # File manifest
 output_files <- c(
-  "output/tables/tab3_phase4_estimands.tex",
-  "output/tables/tab3_phase4_estimands.csv",
-  "output/tables/app_tab_phase4_mnl_coefficients.tex",
-  "output/tables/app_tab_phase4_mnl_coefficients.csv",
-  "output/tables/app_tab_phase4_acquiescence.tex",
-  "output/tables/app_tab_phase4_acquiescence.csv",
-  "output/figures/fig3_tool_config_warmthXblame.pdf",
-  "output/figures/app_fig_placebo_sanctionsXintlcoop.pdf",
-  "output/tables/app_tab_placebo_models.tex",
-  "output/tables/app_tab_placebo_models.csv",
-  "output/tables/phase4_objects.rds",
-  "output/tables/phase4_log.txt"
+  "prism/tables/tab3_phase4_estimands.tex",
+  "prism/tables/tab3_phase4_estimands.csv",
+  "prism/tables/app_tab_phase4_mnl_coefficients.tex",
+  "prism/tables/app_tab_phase4_mnl_coefficients.csv",
+  "prism/tables/app_tab_phase4_acquiescence.tex",
+  "prism/tables/app_tab_phase4_acquiescence.csv",
+  "prism/figures/fig3_tool_config_warmthXblame.pdf",
+  "prism/figures/app_fig_placebo_sanctionsXintlcoop.pdf",
+  "prism/tables/app_tab_placebo_models.tex",
+  "prism/tables/app_tab_placebo_models.csv",
+  "prism/tables/phase4_objects.rds",
+  "prism/tables/phase4_log.txt"
 )
 
 log_msg("  File manifest:")
@@ -1373,6 +1513,433 @@ log_msg("=======================================================================
 log_msg("PHASE 4 COMPLETE")
 log_msg("========================================================================")
 
-writeLines(log_env$entries, here("output", "tables", "phase4_log.txt"))
+writeLines(log_env$entries, here("prism", "tables", "phase4_log.txt"))
 message(sprintf("Phase 4 log saved to: %s",
-                here("output", "tables", "phase4_log.txt")))
+                here("prism", "tables", "phase4_log.txt")))
+
+
+# ============================================================
+# NA-1: MNL without posture_z ("total effect" specification)
+# ============================================================
+# Purpose: Re-estimate the multinomial logit WITHOUT posture_z to show the
+# "total effect" of warmth x blame on tool configuration. The main model
+# (Section 4) includes posture_z to isolate within-posture composition
+# effects. Removing posture_z reveals whether blame shifts the tool mix
+# in the overall population, not just conditional on posture.
+#
+# Note: posture_z is downstream of warmth x blame (Phase 3 establishes
+# this), so the main model estimates a within-posture composition effect
+# while this robustness block estimates the total-effect composition shift.
+# ============================================================
+
+log_msg("")
+log_msg("========================================================================")
+log_msg("NA-1: MNL Total-Effect Specification (posture_z excluded)")
+log_msg("========================================================================")
+
+# Total-effect control RHS: drop posture_z from ctrl_rhs
+ctrl_rhs_total <- gsub("\\s*\\+\\s*posture_z", "", ctrl_rhs)
+ctrl_rhs_total <- gsub("posture_z\\s*\\+\\s*", "", ctrl_rhs_total)
+log_msg(sprintf("  ctrl_rhs_total: %s", ctrl_rhs_total))
+
+# --- Fit total-effect models ---
+mpool_te <- run_multinomial(pooled, ctrl_rhs_total, include_year_fe = TRUE)
+log_msg(sprintf("  mpool_te (pooled, no posture_z): %s",
+                ifelse(is.null(mpool_te), "FAILED", "OK")))
+
+m24_te <- NULL
+m25_te <- NULL
+
+if (cell_ok_24) {
+  m24_te <- run_multinomial(clean_2024, ctrl_rhs_total, include_year_fe = FALSE)
+  log_msg(sprintf("  m24_te (2024, no posture_z): %s",
+                  ifelse(is.null(m24_te), "FAILED", "OK")))
+}
+if (cell_ok_25) {
+  m25_te <- run_multinomial(clean_2025, ctrl_rhs_total, include_year_fe = FALSE)
+  log_msg(sprintf("  m25_te (2025, no posture_z): %s",
+                  ifelse(is.null(m25_te), "FAILED", "OK")))
+}
+
+# --- Extract blame contrasts (Dpp) at warmth_z = -1, 0, +1 ---
+#     for both specifications: within-posture (mpool) vs total-effect (mpool_te)
+na1_contrasts <- list()
+
+for (wz in c(-1, 0, 1)) {
+  for (spec in list(list(mod = mpool,    label = "Within-posture (posture_z included)"),
+                    list(mod = mpool_te, label = "Total-effect (posture_z excluded)"))) {
+    if (is.null(spec$mod)) next
+    comps <- tryCatch(
+      comparisons(spec$mod, variables = "blame_china",
+                  newdata = datagrid(warmth_z = wz, model = spec$mod),
+                  type = "probs"),
+      error = function(e) {
+        log_msg(sprintf("  NA-1 comparisons() failed (%s, warmth=%d): %s",
+                        spec$label, wz, e$message))
+        NULL
+      }
+    )
+    if (!is.null(comps)) {
+      comps_df <- as.data.frame(comps) %>%
+        mutate(warmth_z_val = wz, specification = spec$label)
+      na1_contrasts[[length(na1_contrasts) + 1]] <- comps_df
+    }
+  }
+}
+
+if (length(na1_contrasts) > 0) {
+  na1_all <- bind_rows(na1_contrasts)
+
+  # Log key comparison for S+A at warmth_z = +1
+  log_msg("")
+  log_msg("  NA-1: Blame effect on P(S+A) at warmth_z = +1 — total vs within-posture:")
+  for (spec_label in unique(na1_all$specification)) {
+    row <- na1_all %>%
+      filter(specification == spec_label, warmth_z_val == 1,
+             group == "S+A")
+    if (nrow(row) == 1) {
+      log_msg(sprintf("    [%s]: Dpp(S+A) = %.4f (SE=%.4f) [%.4f, %.4f]",
+                      spec_label, row$estimate, row$std.error,
+                      row$conf.low, row$conf.high))
+    }
+  }
+
+  # --- Comparison table: key warmth x blame coefficients ---
+  # Extract warmth_z * blame_china coefficients from each model
+  extract_mnl_intxn <- function(mod, spec_label, outcome) {
+    if (is.null(mod)) return(NULL)
+    coef_mat <- coef(mod)       # matrix: outcomes x predictors
+    if (!outcome %in% rownames(coef_mat)) return(NULL)
+    rw <- coef_mat[outcome, ]
+    term_candidates <- c("warmth_z:blame_china", "blame_china:warmth_z")
+    term <- term_candidates[term_candidates %in% names(rw)][1]
+    if (is.na(term)) return(NULL)
+    # SE via Hessian-based vcov (model-based; not survey-design-based)
+    V_full <- vcov(mod)
+    rn <- rownames(V_full)
+    coef_name <- paste0(outcome, ":", term)
+    if (!coef_name %in% rn) {
+      # nnet::multinom uses "outcome.term" format in some versions
+      coef_name <- paste0(outcome, ".", term)
+    }
+    se_val <- if (coef_name %in% rn) sqrt(V_full[coef_name, coef_name]) else NA_real_
+    tibble(
+      Specification = spec_label,
+      Outcome = outcome,
+      `Warmth x Blame coef` = rw[term],
+      SE = se_val
+    )
+  }
+
+  outcomes_for_tbl <- c("Sanctions-only", "Action-only", "S+A")
+
+  na1_coef_rows <- list()
+  for (outcome in outcomes_for_tbl) {
+    na1_coef_rows[[length(na1_coef_rows) + 1]] <-
+      extract_mnl_intxn(mpool, "Within-posture (posture_z included)", outcome)
+    na1_coef_rows[[length(na1_coef_rows) + 1]] <-
+      extract_mnl_intxn(mpool_te, "Total-effect (posture_z excluded)", outcome)
+  }
+  na1_coef_df <- bind_rows(Filter(Negate(is.null), na1_coef_rows))
+
+  # Also include Dpp(S+A) at warmth=-1, 0, +1 per specification
+  dpp_comparison <- na1_all %>%
+    filter(group == "S+A") %>%
+    mutate(
+      warmth_label = sprintf("warmth_z = %+d", warmth_z_val),
+      Dpp_SA = sprintf("%.4f (SE=%.4f)", estimate, std.error)
+    ) %>%
+    select(Specification = specification, `Warmth Level` = warmth_label,
+           `Dpp(S+A)` = Dpp_SA)
+
+  log_msg("")
+  log_msg("  NA-1: Dpp(S+A) by warmth level — total-effect vs within-posture:")
+  for (i in seq_len(nrow(dpp_comparison))) {
+    log_msg(sprintf("    [%s] warmth=%s: Dpp(S+A) = %s",
+                    dpp_comparison$Specification[i],
+                    dpp_comparison$`Warmth Level`[i],
+                    dpp_comparison$`Dpp(S+A)`[i]))
+  }
+
+  # --- Save comparison table ---
+  # Format with booktabs, no caption/label/float
+  na1_tex_path <- here("prism", "tables", "app_tab_mnl_total_effect.tex")
+
+  # Build a combined display tibble
+  na1_coef_display <- na1_coef_df %>%
+    mutate(
+      `Warmth x Blame` = sprintf("%.4f", `Warmth x Blame coef`),
+      `SE (model-based)` = ifelse(is.na(SE), "—", sprintf("%.4f", SE))
+    ) %>%
+    select(Specification, Outcome, `Warmth x Blame`, `SE (model-based)`)
+
+  # Append Dpp rows
+  dpp_display <- dpp_comparison %>%
+    rename(Specification = Specification, Outcome = `Warmth Level`,
+           `Warmth x Blame` = `Dpp(S+A)`) %>%
+    mutate(`SE (model-based)` = "(predicted prob contrast)")
+
+  na1_display <- bind_rows(
+    tibble(Specification = "--- MNL Coefficients (Warmth x Blame interaction) ---",
+           Outcome = "", `Warmth x Blame` = "", `SE (model-based)` = ""),
+    na1_coef_display,
+    tibble(Specification = "--- Blame contrasts: Dpp(S+A) at warmth levels ---",
+           Outcome = "", `Warmth x Blame` = "", `SE (model-based)` = ""),
+    dpp_display,
+    tibble(Specification = "Note: MNL SEs are Hessian-based (model-based); not directly comparable to design-based SEs in main tables.",
+           Outcome = "", `Warmth x Blame` = "", `SE (model-based)` = "")
+  )
+
+  tex_out <- na1_display %>%
+    kbl(format = "latex", booktabs = TRUE, caption = NULL, linesep = "")
+  writeLines(as.character(tex_out), na1_tex_path)
+  log_msg(sprintf("  Saved: app_tab_mnl_total_effect.tex"))
+
+  write_csv(na1_display, here("prism", "tables", "app_tab_mnl_total_effect.csv"))
+  log_msg("  Saved: app_tab_mnl_total_effect.csv")
+
+} else {
+  log_msg("  NA-1: WARNING — no comparison data available (all models failed)")
+}
+
+log_msg("NA-1 complete")
+
+
+# ============================================================
+# NA-3: IIA test for the MNL (Hausman-McFadden via mlogit)
+# ============================================================
+# Purpose: Test the Independence of Irrelevant Alternatives (IIA) assumption
+# underlying the multinomial logit. If IIA is violated, the MNL is
+# mis-specified and a nested logit or mixed logit would be needed.
+#
+# We test IIA for the margin most theoretically important: omitting S+A
+# to test whether S+A is truly "irrelevant" from the perspective of the
+# other categories. The Hausman-McFadden test compares restricted (S+A
+# omitted) and unrestricted MNL coefficients.
+#
+# If mlogit is unavailable, we fall back to a coefficient stability
+# comparison across restricted and unrestricted nnet::multinom models.
+# ============================================================
+
+log_msg("")
+log_msg("========================================================================")
+log_msg("NA-3: IIA Test for MNL (Hausman-McFadden)")
+log_msg("========================================================================")
+
+na3_result <- list(
+  method = NA_character_,
+  statistic = NA_real_,
+  df = NA_integer_,
+  p_value = NA_real_,
+  verdict = NA_character_
+)
+
+# Try mlogit approach first
+na3_mlogit_ok <- tryCatch({
+  suppressPackageStartupMessages(library(mlogit))
+  TRUE
+}, error = function(e) FALSE, warning = function(w) FALSE)
+
+log_msg(sprintf("  mlogit available: %s", na3_mlogit_ok))
+
+if (na3_mlogit_ok && !is.null(mpool)) {
+  tryCatch({
+    # Identify complete cases for the pooled model's variables
+    fmla_te_pool <- as.formula(paste0(
+      "tool_config ~ warmth_z * blame_china + ", ctrl_rhs_total, " + factor(year)"
+    ))
+    model_vars_te <- all.vars(fmla_te_pool)
+    pooled_te_complete <- pooled[complete.cases(pooled[, model_vars_te, drop = FALSE]), ]
+
+    log_msg(sprintf("  Reshaping %d complete cases to mlogit long format...",
+                    nrow(pooled_te_complete)))
+
+    # mlogit::mlogit.data() reshapes wide to long, creating the choice variable
+    # We use a random-utility model with individual-level covariates (no alternative-
+    # specific variables), so shape = "wide" is appropriate.
+    mlogit_data <- mlogit.data(
+      pooled_te_complete,
+      choice = "tool_config",
+      shape  = "wide"
+    )
+
+    # Build formula for mlogit: alternatives on LHS, individual covariates on RHS
+    # mlogit formula syntax: y ~ 0 | x1 + x2 + ... (0 = no alt-specific intercept
+    # beyond the alternatives themselves; individual covariates go after |)
+    ctrl_vars_mlogit <- strsplit(ctrl_rhs_total, "\\s*\\+\\s*")[[1]]
+    mlogit_rhs <- paste(
+      c("warmth_z", "blame_china", "warmth_z:blame_china", ctrl_vars_mlogit,
+        "factor(year)"),
+      collapse = " + "
+    )
+    mlogit_fmla <- as.formula(paste0("tool_config ~ 0 | ", mlogit_rhs))
+
+    log_msg("  Fitting unrestricted mlogit (all 4 alternatives)...")
+    m_mlogit_full <- mlogit(mlogit_fmla, data = mlogit_data,
+                             weights = pooled_te_complete$weight,
+                             reflevel = "Neither")
+
+    log_msg(sprintf("  mlogit full: converged = %s",
+                    ifelse(m_mlogit_full$code == 0, "YES", "NO/UNCLEAR")))
+
+    # IIA test: omit S+A, re-estimate on {Neither, Sanctions-only, Action-only}
+    # This tests whether P(S-only | .) / P(Neither | .) is stable after removing S+A
+    log_msg("  Fitting restricted mlogit (S+A omitted)...")
+    pooled_te_no_sa <- pooled_te_complete[
+      pooled_te_complete$tool_config != "S+A", ]
+    pooled_te_no_sa$tool_config <- droplevels(pooled_te_no_sa$tool_config)
+    mlogit_data_restricted <- mlogit.data(
+      pooled_te_no_sa,
+      choice = "tool_config",
+      shape  = "wide"
+    )
+    m_mlogit_rest <- mlogit(mlogit_fmla, data = mlogit_data_restricted,
+                             weights = pooled_te_no_sa$weight,
+                             reflevel = "Neither")
+
+    log_msg(sprintf("  mlogit restricted: converged = %s",
+                    ifelse(m_mlogit_rest$code == 0, "YES", "NO/UNCLEAR")))
+
+    # Hausman-McFadden IIA test
+    iia_test <- hmftest(m_mlogit_full, m_mlogit_rest)
+    iia_stat <- unname(iia_test$statistic)
+    iia_df   <- unname(iia_test$parameter)
+    iia_p    <- iia_test$p.value
+
+    log_msg(sprintf("  Hausman-McFadden IIA test (omitting S+A):"))
+    log_msg(sprintf("    chi^2 = %.4f, df = %d, p = %s",
+                    iia_stat, iia_df, fmt_p(iia_p)))
+
+    verdict <- if (!is.na(iia_p)) {
+      if (iia_p < 0.05) {
+        "IIA REJECTED (p < 0.05): MNL may be mis-specified; nested logit recommended"
+      } else {
+        "IIA NOT REJECTED (p >= 0.05): IIA assumption is consistent with the data"
+      }
+    } else {
+      "IIA test inconclusive (NA p-value)"
+    }
+    log_msg(sprintf("    Verdict: %s", verdict))
+
+    na3_result <- list(
+      method    = "Hausman-McFadden (mlogit)",
+      statistic = iia_stat,
+      df        = as.integer(iia_df),
+      p_value   = iia_p,
+      verdict   = verdict
+    )
+
+  }, error = function(e) {
+    log_msg(sprintf("  mlogit IIA test FAILED: %s", e$message))
+    log_msg("  Falling back to coefficient stability comparison")
+    na3_mlogit_ok <<- FALSE
+  })
+}
+
+# Fallback: coefficient stability (if mlogit failed or unavailable)
+if (!na3_mlogit_ok || is.na(na3_result$method)) {
+  log_msg("  FALLBACK: Coefficient stability comparison (IIA proxy)")
+  log_msg("  Fitting restricted MNL omitting S+A via nnet::multinom...")
+
+  if (!is.null(mpool_te)) {
+    # Re-fit on data excluding S+A
+    pooled_no_sa <- pooled[pooled$tool_config != "S+A" &
+                             !is.na(pooled$tool_config), ]
+    pooled_no_sa$tool_config <- droplevels(pooled_no_sa$tool_config)
+
+    fmla_rest <- as.formula(paste0(
+      "tool_config ~ warmth_z * blame_china + ", ctrl_rhs_total, " + factor(year)"
+    ))
+    rest_vars <- all.vars(fmla_rest)
+    pooled_no_sa_cc <- pooled_no_sa[complete.cases(pooled_no_sa[, rest_vars, drop = FALSE]), ]
+
+    m_rest <- tryCatch(
+      multinom(fmla_rest, data = pooled_no_sa_cc, weights = weight,
+               trace = FALSE, Hess = TRUE, maxit = 300),
+      error = function(e) {
+        log_msg(sprintf("  Restricted nnet failed: %s", e$message))
+        NULL
+      }
+    )
+
+    if (!is.null(m_rest) && !is.null(mpool_te)) {
+      # Compare Sanctions-only equation coefficients between full and restricted
+      # (IIA: should be similar if IIA holds)
+      coef_full <- coef(mpool_te)
+      coef_rest <- coef(m_rest)
+
+      outcomes_both <- intersect(rownames(coef_full), rownames(coef_rest))
+      terms_both    <- intersect(colnames(coef_full), colnames(coef_rest))
+
+      if (length(outcomes_both) > 0 && length(terms_both) > 0) {
+        max_diff <- max(abs(coef_full[outcomes_both, terms_both, drop = FALSE] -
+                              coef_rest[outcomes_both, terms_both, drop = FALSE]),
+                        na.rm = TRUE)
+        log_msg(sprintf("  Max |coef_full - coef_restricted| across common terms: %.4f",
+                        max_diff))
+        verdict_fallback <- if (max_diff > 0.10) {
+          "Unstable (max shift > 0.10): potential IIA violation; formal test not run"
+        } else {
+          "Stable (max shift <= 0.10); formal IIA test not run"
+        }
+        log_msg(sprintf("  Fallback verdict: %s", verdict_fallback))
+        na3_result <- list(
+          method    = "Coefficient stability comparison (mlogit unavailable)",
+          statistic = max_diff,
+          df        = NA_integer_,
+          p_value   = NA_real_,
+          verdict   = verdict_fallback
+        )
+      }
+    } else {
+      log_msg("  Fallback: one or both models unavailable")
+    }
+  } else {
+    log_msg("  Fallback skipped: mpool_te not available")
+  }
+}
+
+# --- Save IIA test summary table ---
+# Use conditional row labels: for fallback (no df), label the statistic as a heuristic
+is_fallback <- is.na(na3_result$df)
+stat_label <- if (is_fallback) "Max coef. shift (heuristic)" else "Test statistic (chi-sq)"
+note_text  <- if (is_fallback) {
+  "Heuristic proxy only; formal Hausman-McFadden test requires mlogit package."
+} else {
+  ""
+}
+
+na3_display <- tibble(
+  Item   = c("Method", stat_label, "Degrees of freedom", "p-value", "Verdict", "Note"),
+  Result = c(
+    na3_result$method,
+    ifelse(is.na(na3_result$statistic), "—",
+           sprintf("%.4f", na3_result$statistic)),
+    ifelse(is.na(na3_result$df), "—",
+           as.character(na3_result$df)),
+    ifelse(is.na(na3_result$p_value), "—",
+           fmt_p(na3_result$p_value)),
+    na3_result$verdict,
+    note_text
+  )
+)
+
+na3_tex_path <- here("prism", "tables", "app_tab_iia_test.tex")
+tex_na3 <- na3_display %>%
+  kbl(format = "latex", booktabs = TRUE, caption = NULL, linesep = "")
+writeLines(as.character(tex_na3), na3_tex_path)
+log_msg("  Saved: app_tab_iia_test.tex")
+
+write_csv(na3_display, here("prism", "tables", "app_tab_iia_test.csv"))
+log_msg("  Saved: app_tab_iia_test.csv")
+
+log_msg("NA-3 complete")
+log_msg("========================================================================")
+
+# Append NA-1/NA-3 objects to phase4_objects and re-save
+phase4_objects$na1_mpool_te     <- mpool_te
+phase4_objects$na1_m24_te       <- m24_te
+phase4_objects$na1_m25_te       <- m25_te
+phase4_objects$na3_iia_result   <- na3_result
+saveRDS(phase4_objects, here("prism", "tables", "phase4_objects.rds"))
+log_msg("  phase4_objects.rds updated with NA-1 and NA-3 objects")

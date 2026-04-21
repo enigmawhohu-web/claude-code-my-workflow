@@ -17,6 +17,17 @@
 #'   across all 8 scenarios. Reports Delta_d, composite boundary, omnibus
 #'   divergence, and TOST equivalence test descriptively.
 #'
+#' @acquiescence_note (MR-B harmonization — names aligned)
+#'   The main probe models in this script control for acquiescence using
+#'   `n_approaches_10`: a 10-item count of endorsed fentanyl-policy
+#'   approaches that EXCLUDES `approach_sanctions` and `approach_china_action`
+#'   to avoid mechanical collinearity with the S+A treatment indicator
+#'   `is_SA`. The full 12-item count `n_approaches_12` is constructed in
+#'   parallel and enters only as a sensitivity model (`mX_d`, Section 5).
+#'   Both 04_mechanisms.R and 05_probes.R now use `n_approaches_10` for the
+#'   10-item (DV-excluding) count and `n_approaches_12` for the full 12-item
+#'   count. The two scripts' 10-item counts are definitionally identical.
+#'
 #' @design PRIMARY: stacked long-format svyglm with binary is_SA indicator,
 #'   clustered by respondent. All controls are fully interacted with scenario
 #'   (equivalent to SUR), so each scenario gets its own control coefficients.
@@ -272,9 +283,9 @@ extract_is_sa_contrast <- function(mod, label) {
 log_msg("")
 log_msg("--- Section 1: Load Data & Construct Variables ---")
 
-pooled     <- readRDS(here("data", "clean", "pooled.rds"))
-clean_2024 <- readRDS(here("data", "clean", "clean_2024.rds"))
-clean_2025 <- readRDS(here("data", "clean", "clean_2025.rds"))
+pooled     <- readRDS(here("data", "cleaned", "pooled.rds"))
+clean_2024 <- readRDS(here("data", "cleaned", "clean_2024.rds"))
+clean_2025 <- readRDS(here("data", "cleaned", "clean_2025.rds"))
 log_msg(sprintf("  Loaded: pooled=%d, 2024=%d, 2025=%d",
                 nrow(pooled), nrow(clean_2024), nrow(clean_2025)))
 
@@ -403,17 +414,21 @@ approach_vars <- c("approach_intl_cooperation", "approach_enforce_sales",
                    "approach_mexico_action", "approach_penalties")
 
 #' Construct n_approaches: count of endorsed fentanyl policy approaches (all 12 items)
-#' Includes approach_sanctions and approach_china_action (tool_config components)
+#' Includes approach_sanctions and approach_china_action (tool_config components).
+#' Used ONLY for the 12-item sensitivity model (mX_d). Main probe models use
+#' n_approaches_10 (10-item) built below. See @acquiescence_note in header;
+#' 04_mechanisms.R's n_approaches_10 is the 10-item analog of this script's
+#' n_approaches_10 (names now aligned after MR-B rename).
 #' @param df Data frame with approach_* columns
-#' @return Data frame with added n_approaches_main, n_approaches_miss, n_approaches_zero
+#' @return Data frame with added n_approaches_12, n_approaches_12_miss, n_approaches_12_zero
 build_n_approaches <- function(df) {
   approach_bins <- vapply(approach_vars, function(v) {
     x <- as.numeric(df[[v]])
     ifelse(is.na(x), NA_integer_, ifelse(x == 1, 1L, 0L))
   }, integer(nrow(df)))
-  df$n_approaches_main <- rowSums(approach_bins, na.rm = FALSE)
-  df$n_approaches_miss <- as.integer(rowSums(is.na(approach_bins)) > 0)
-  df$n_approaches_zero <- rowSums(
+  df$n_approaches_12 <- rowSums(approach_bins, na.rm = FALSE)
+  df$n_approaches_12_miss <- as.integer(rowSums(is.na(approach_bins)) > 0)
+  df$n_approaches_12_zero <- rowSums(
     replace(approach_bins, is.na(approach_bins), 0L), na.rm = TRUE
   )
   df
@@ -423,31 +438,31 @@ pooled     <- build_n_approaches(pooled)
 clean_2024 <- build_n_approaches(clean_2024)
 clean_2025 <- build_n_approaches(clean_2025)
 
-# Construct n_approaches_excl (10 items; excludes tool_config components)
+# Construct n_approaches_10 (10 items; excludes tool_config components)
 approach_vars_excl <- setdiff(approach_vars,
                               c("approach_sanctions", "approach_china_action"))
 
-#' Construct n_approaches_excl: 10-item count excluding sanctions & china_action
+#' Construct n_approaches_10: 10-item count excluding sanctions & china_action
 #' Avoids mechanical collinearity with is_SA (which derives from those 2 items)
 #' @param df Data frame with approach_* columns
-#' @return Data frame with added n_approaches_excl, n_approaches_excl_miss,
-#'   n_approaches_excl_zero columns
-build_n_approaches_excl <- function(df) {
+#' @return Data frame with added n_approaches_10, n_approaches_10_miss,
+#'   n_approaches_10_zero columns
+build_n_approaches_10 <- function(df) {
   approach_bins_excl <- vapply(approach_vars_excl, function(v) {
     x <- as.numeric(df[[v]])
     ifelse(is.na(x), NA_integer_, ifelse(x == 1, 1L, 0L))
   }, integer(nrow(df)))
-  df$n_approaches_excl <- rowSums(approach_bins_excl, na.rm = FALSE)
-  df$n_approaches_excl_miss <- as.integer(rowSums(is.na(approach_bins_excl)) > 0)
-  df$n_approaches_excl_zero <- rowSums(
+  df$n_approaches_10 <- rowSums(approach_bins_excl, na.rm = FALSE)
+  df$n_approaches_10_miss <- as.integer(rowSums(is.na(approach_bins_excl)) > 0)
+  df$n_approaches_10_zero <- rowSums(
     replace(approach_bins_excl, is.na(approach_bins_excl), 0L), na.rm = TRUE
   )
   df
 }
 
-pooled     <- build_n_approaches_excl(pooled)
-clean_2024 <- build_n_approaches_excl(clean_2024)
-clean_2025 <- build_n_approaches_excl(clean_2025)
+pooled     <- build_n_approaches_10(pooled)
+clean_2024 <- build_n_approaches_10(clean_2024)
+clean_2025 <- build_n_approaches_10(clean_2025)
 
 
 # --- Section 2: Construct Phase 5 Variables ----------------------------------
@@ -522,8 +537,8 @@ for (cat in names(tc_tab)) {
 # --- 2.3 n_approaches audit ---
 log_msg("")
 log_msg("  2.3 n_approaches summary")
-for (v in c("n_approaches_main", "n_approaches_miss",
-            "n_approaches_excl", "n_approaches_excl_miss")) {
+for (v in c("n_approaches_12", "n_approaches_12_miss",
+            "n_approaches_10", "n_approaches_10_miss")) {
   vals <- na.omit(as.numeric(pooled[[v]]))
   log_msg(sprintf("    %s: n=%d, NAs=%d, range=[%.0f, %.0f], mean=%.3f",
                   v, length(vals), sum(is.na(pooled[[v]])),
@@ -605,14 +620,14 @@ if (all(is.na(pooled$p_hat_sa))) {
   }
 }
 
-# --- 2.5 n_approaches_excl audit ---
+# --- 2.5 n_approaches_10 audit ---
 log_msg("")
-log_msg("  2.5 n_approaches_excl (10-item, main spec)")
+log_msg("  2.5 n_approaches_10 (10-item, main spec)")
 log_msg(sprintf("    mean=%.3f, sd=%.3f, range=[%.0f, %.0f]",
-                mean(pooled$n_approaches_excl, na.rm = TRUE),
-                sd(pooled$n_approaches_excl, na.rm = TRUE),
-                min(pooled$n_approaches_excl, na.rm = TRUE),
-                max(pooled$n_approaches_excl, na.rm = TRUE)))
+                mean(pooled$n_approaches_10, na.rm = TRUE),
+                sd(pooled$n_approaches_10, na.rm = TRUE),
+                min(pooled$n_approaches_10, na.rm = TRUE),
+                max(pooled$n_approaches_10, na.rm = TRUE)))
 
 
 # --- Section 3: Survey Design Objects ----------------------------------------
@@ -643,7 +658,7 @@ ctrl_rhs <- "party3 + ideo5_clean + educ_college + age + female + race_eth + new
 ctrl_vars <- c("warmth_z", "blame_china", "party3", "ideo5_clean",
                "educ_college", "age", "female", "race_eth",
                "newsint_attn", "exposure_index")
-model_vars_no_probes <- c("is_SA", "n_approaches_excl", "n_approaches_excl_miss",
+model_vars_no_probes <- c("is_SA", "n_approaches_10", "n_approaches_10_miss",
                            ctrl_vars, "year", "weight")
 analytic_vars <- c(probe_cols, model_vars_no_probes)
 
@@ -691,7 +706,7 @@ log_msg("  4.1 PRIMARY: Stacked long model (scenario * (is_SA + controls), clust
 
 stacked_fmla <- as.formula(paste0(
   "probe_value ~ scenario * (is_SA + ",
-  "n_approaches_excl + n_approaches_excl_miss + ",
+  "n_approaches_10 + n_approaches_10_miss + ",
   "warmth_z * blame_china + ", ctrl_rhs, " + factor(year))"
 ))
 
@@ -722,7 +737,7 @@ if (!is.null(m_stacked)) {
 log_msg("")
 log_msg("  4.2 APPENDIX: 8 separate wide-format models (is_SA, same sample)")
 
-rhs_main_sa <- paste0("is_SA + n_approaches_excl + n_approaches_excl_miss + ",
+rhs_main_sa <- paste0("is_SA + n_approaches_10 + n_approaches_10_miss + ",
                        "warmth_z * blame_china + ", ctrl_rhs, " + factor(year)")
 
 main_models <- list()
@@ -742,7 +757,7 @@ log_msg("  4.3a P_hat continuous specification")
 log_msg("  NOTE: SEs do not propagate Stage 1 uncertainty; directional only.")
 mB_d <- NULL
 if (!all(is.na(pooled$p_hat_sa))) {
-  rhs_phat <- paste0("p_hat_sa + n_approaches_excl + n_approaches_excl_miss + ",
+  rhs_phat <- paste0("p_hat_sa + n_approaches_10 + n_approaches_10_miss + ",
                       "warmth_z * blame_china + ", ctrl_rhs, " + factor(year)")
   des_pool <- svydesign(ids = ~1, weights = ~weight, data = pooled)
   mB_d <- fit_probe_model("probe_d", rhs_phat, des_pool, "mB_d")
@@ -753,17 +768,20 @@ if (!all(is.na(pooled$p_hat_sa))) {
 
 # 4.3b Zero-imputed n_approaches
 log_msg("  4.3b Zero-imputed n_approaches")
-rhs_zero_sa <- paste0("is_SA + n_approaches_excl_zero + ",
+rhs_zero_sa <- paste0("is_SA + n_approaches_10_zero + ",
                        "warmth_z * blame_china + ", ctrl_rhs, " + factor(year)")
 mZ_d <- fit_probe_model("probe_d", rhs_zero_sa, des_sa_complete, "mZ_d")
-log_model(mZ_d, "mZ_d (probe_d ~ n_approaches_excl_zero)")
+log_model(mZ_d, "mZ_d (probe_d ~ n_approaches_10_zero)")
 
-# 4.3c All-12 n_approaches (includes DV components)
-log_msg("  4.3c All-12 n_approaches robustness")
-rhs_all12_sa <- paste0("is_SA + n_approaches_main + n_approaches_miss + ",
+# 4.3c All-12 n_approaches (includes DV components) — 12-item SENSITIVITY.
+# Main spec is mZ_d (above) using n_approaches_10 (10-item, DV-excluding).
+# mX_d reports the coefficient when the two DV-component approach items are
+# included in the acquiescence count — shown in appendix only.
+log_msg("  4.3c All-12 n_approaches robustness (12-item sensitivity)")
+rhs_all12_sa <- paste0("is_SA + n_approaches_12 + n_approaches_12_miss + ",
                         "warmth_z * blame_china + ", ctrl_rhs, " + factor(year)")
 mX_d <- fit_probe_model("probe_d", rhs_all12_sa, des_sa_complete, "mX_d")
-log_model(mX_d, "mX_d (probe_d ~ n_approaches_main)")
+log_model(mX_d, "mX_d (probe_d ~ n_approaches_12, 12-item sensitivity)")
 
 # --- 4.4 CONDITIONAL: Binary robustness ---
 log_msg("")
@@ -992,41 +1010,62 @@ sd_probes_analytic <- vapply(paste0("probe_", ALL_PROBES), function(pv) {
   sd(pooled_complete[[pv]], na.rm = TRUE)
 }, numeric(1))
 names(sd_probes_analytic) <- ALL_PROBES
-sd_boundary    <- mean(sd_probes_analytic[BOUNDARY_PROBES])
-epsilon_main   <- 0.10 * sd_boundary
-epsilon_lax    <- 0.25 * sd_boundary
-tost_p_main    <- NA_real_
-tost_p_lax     <- NA_real_
+sd_boundary          <- mean(sd_probes_analytic[BOUNDARY_PROBES])
+epsilon_main         <- 0.10 * sd_boundary
+epsilon_tight_inter  <- 0.15 * sd_boundary   # MOD-3 intermediate bound
+epsilon_loose_inter  <- 0.20 * sd_boundary   # MOD-3 intermediate bound
+epsilon_lax          <- 0.25 * sd_boundary
+tost_p_main          <- NA_real_
+tost_p_tight_inter   <- NA_real_
+tost_p_loose_inter   <- NA_real_
+tost_p_lax           <- NA_real_
 
 log_msg(sprintf("  SD_boundary (mean of 7 probes): %.4f", sd_boundary))
-log_msg(sprintf("  epsilon_main (0.10 x SD): %.4f", epsilon_main))
-log_msg(sprintf("  epsilon_lax  (0.25 x SD): %.4f", epsilon_lax))
+log_msg(sprintf("  epsilon 0.10xSD: %.4f", epsilon_main))
+log_msg(sprintf("  epsilon 0.15xSD: %.4f", epsilon_tight_inter))
+log_msg(sprintf("  epsilon 0.20xSD: %.4f", epsilon_loose_inter))
+log_msg(sprintf("  epsilon 0.25xSD: %.4f", epsilon_lax))
+
+# Helper: compute TOST p-value for a given epsilon (symmetric bounds)
+tost_p_for_eps <- function(est, se, eps, df) {
+  # H0: |theta| >= eps vs H1: |theta| < eps
+  t_upper <- (est - eps) / se
+  t_lower <- (est + eps) / se
+  p_upper <- pt(t_upper, df = df)
+  p_lower <- pt(t_lower, df = df, lower.tail = FALSE)
+  max(p_upper, p_lower)
+}
 
 if (!is.na(composite_est) && !is.null(m_stacked)) {
-  # TOST: H0: |theta| >= epsilon vs H1: |theta| < epsilon
-  # Test 1: H0: theta >= epsilon  =>  p_upper = P(T < (theta-eps)/se)
-  # Test 2: H0: theta <= -epsilon =>  p_lower = P(T > (theta+eps)/se)
-  # p_TOST = max(p_upper, p_lower)
+  tost_p_main         <- tost_p_for_eps(composite_est, composite_se, epsilon_main, df_r)
+  tost_p_tight_inter  <- tost_p_for_eps(composite_est, composite_se, epsilon_tight_inter, df_r)
+  tost_p_loose_inter  <- tost_p_for_eps(composite_est, composite_se, epsilon_loose_inter, df_r)
+  tost_p_lax          <- tost_p_for_eps(composite_est, composite_se, epsilon_lax, df_r)
 
-  # Main epsilon (0.10 x SD)
-  t_upper_main <- (composite_est - epsilon_main) / composite_se
-  t_lower_main <- (composite_est + epsilon_main) / composite_se
-  p_upper_main <- pt(t_upper_main, df = df_r)
-  p_lower_main <- pt(t_lower_main, df = df_r, lower.tail = FALSE)
-  tost_p_main  <- max(p_upper_main, p_lower_main)
-
-  log_msg(sprintf("  TOST main (eps=%.4f): p = %s",
+  log_msg(sprintf("  TOST 0.10xSD (eps=%.4f): p = %s [main]",
                   epsilon_main, fmt_p(tost_p_main)))
-
-  # --- APPENDIX: TOST sensitivity (lax epsilon 0.25 x SD) ---
-  t_upper_lax <- (composite_est - epsilon_lax) / composite_se
-  t_lower_lax <- (composite_est + epsilon_lax) / composite_se
-  p_upper_lax <- pt(t_upper_lax, df = df_r)
-  p_lower_lax <- pt(t_lower_lax, df = df_r, lower.tail = FALSE)
-  tost_p_lax  <- max(p_upper_lax, p_lower_lax)
-
-  log_msg(sprintf("  TOST lax (eps=%.4f): p = %s [appendix]",
+  log_msg(sprintf("  TOST 0.15xSD (eps=%.4f): p = %s [MOD-3]",
+                  epsilon_tight_inter, fmt_p(tost_p_tight_inter)))
+  log_msg(sprintf("  TOST 0.20xSD (eps=%.4f): p = %s [MOD-3]",
+                  epsilon_loose_inter, fmt_p(tost_p_loose_inter)))
+  log_msg(sprintf("  TOST 0.25xSD (eps=%.4f): p = %s [lax]",
                   epsilon_lax, fmt_p(tost_p_lax)))
+
+  # --- MOD-3: TOST sensitivity table across 4 epsilon bounds ---
+  tost_sens_df <- tibble::tibble(
+    `Bound (fraction of SD)` = c("0.10", "0.15", "0.20", "0.25"),
+    `Epsilon`                = sprintf("%.4f", c(epsilon_main, epsilon_tight_inter,
+                                                  epsilon_loose_inter, epsilon_lax)),
+    `Composite estimate`     = sprintf("%.4f", rep(composite_est, 4)),
+    `SE`                     = sprintf("%.4f", rep(composite_se, 4)),
+    `TOST p-value`           = c(fmt_p(tost_p_main), fmt_p(tost_p_tight_inter),
+                                  fmt_p(tost_p_loose_inter), fmt_p(tost_p_lax)),
+    `Reject H0 (alpha=.05)`  = ifelse(c(tost_p_main, tost_p_tight_inter,
+                                         tost_p_loose_inter, tost_p_lax) < 0.05,
+                                       "Yes", "No")
+  )
+  save_table(tost_sens_df, "app_tab_tost_sensitivity",
+             caption = "")
 }
 
 # --- 5f. Interpretation logic ---
@@ -1348,16 +1387,16 @@ log_msg("--- Section 8: Diagnostics ---")
 
 # --- 8.1 Correlations ---
 log_msg("  Key correlations (pooled):")
-cor_vars <- c("warmth_z", "blame_china", "n_approaches_excl")
+cor_vars <- c("warmth_z", "blame_china", "n_approaches_10")
 cor_data <- pooled[, cor_vars]
 cor_complete <- cor_data[complete.cases(cor_data), ]
 if (nrow(cor_complete) > 0) {
   log_msg(sprintf("    cor(warmth_z, blame_china) = %.4f",
                   cor(cor_complete$warmth_z, cor_complete$blame_china)))
-  log_msg(sprintf("    cor(n_approaches_excl, warmth_z) = %.4f",
-                  cor(cor_complete$n_approaches_excl, cor_complete$warmth_z)))
-  log_msg(sprintf("    cor(n_approaches_excl, blame_china) = %.4f",
-                  cor(cor_complete$n_approaches_excl, cor_complete$blame_china)))
+  log_msg(sprintf("    cor(n_approaches_10, warmth_z) = %.4f",
+                  cor(cor_complete$n_approaches_10, cor_complete$warmth_z)))
+  log_msg(sprintf("    cor(n_approaches_10, blame_china) = %.4f",
+                  cor(cor_complete$n_approaches_10, cor_complete$blame_china)))
 }
 
 # --- 8.2 VIF: Manual lm-based on probe_d separate model ---

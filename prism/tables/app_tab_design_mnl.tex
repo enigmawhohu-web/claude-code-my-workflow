@@ -1,0 +1,19 @@
+
+\begin{tabular}[t]{llrrrrl}
+\toprule
+Outcome & Predictor & Estimate & Design SE & t-value & p-value & Stars\\
+\midrule
+Sanctions-only & warmth\_z & 0.0474 & 0.0619 & 0.766 & 0.4439 & \\
+Action-only & warmth\_z & 0.0632 & 0.1016 & 0.622 & 0.5342 & \\
+S+A & warmth\_z & -0.2269 & 0.1018 & -2.228 & 0.0259 & *\\
+Sanctions-only & blame\_china & 0.8045 & 0.0927 & 8.676 & 0.0000 & ***\\
+Action-only & blame\_china & 1.6519 & 0.1314 & 12.572 & 0.0000 & ***\\
+S+A & blame\_china & 2.6398 & 0.1130 & 23.353 & 0.0000 & ***\\
+Sanctions-only & factor(year)2025 & -0.2426 & 0.0871 & -2.785 & 0.0054 & **\\
+Action-only & factor(year)2025 & -0.0559 & 0.1191 & -0.469 & 0.6391 & \\
+S+A & factor(year)2025 & -0.1267 & 0.0922 & -1.373 & 0.1697 & \\
+Sanctions-only & warmth\_z:blame\_china & -0.1927 & 0.0894 & -2.154 & 0.0313 & *\\
+Action-only & warmth\_z:blame\_china & -0.1546 & 0.1257 & -1.230 & 0.2189 & \\
+S+A & warmth\_z:blame\_china & 0.1343 & 0.1143 & 1.175 & 0.2402 & \\
+\bottomrule
+\end{tabular}

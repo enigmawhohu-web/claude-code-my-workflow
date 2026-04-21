@@ -1,0 +1,4 @@
+Quantity,Estimate,SE,95% CI,p-value,N
+2024 interaction (warmth x blame),0.1039,0.0461,"[0.0134, 0.1943]",0.024*,4234
+2025 - 2024 differential (triple term),0.0679,0.0700,"[-0.0692, 0.2051]",0.332,4234
+2025 interaction (implied sum),0.1718,0.0531,"[0.0678, 0.2758]",0.001**,4234
