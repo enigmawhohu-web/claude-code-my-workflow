@@ -102,3 +102,29 @@
 - Done: Phase 1 (all NEW ANALYSIS) ✓; Phase 2 (missing literature) ✓
 - Pending: Phase 3 CLARIFICATION + MINOR (writer tasks: M-2, MR-C, UD-1, MIN-1~7)
 - Pending: Phase 4 re-review (fresh referee dispatch after Phase 3 complete)
+
+## 2026-04-21 — Phase 3 CLARIFICATION+MINOR complete; pre-Phase 4 archive
+
+**Operations:**
+- Committed Phase 1 manuscript integration (commit `5e08ef6`): wired all Phase 1 appendix tables into manuscript, updated figures, scripts, rules
+- Committed Phase 3 writer pass (commit `c8b9361`): 558 → 650 line manuscript, 8 files changed
+- Fixed table formatting throughout: all \hline → booktabs in tab2, app_tab_phase3_r1_models; stripped \begin{table} wrapper from app_tab_tost_sensitivity; fixed Missing-$ errors in app_tab_mi_phase4/5/diagnostics
+- Updated .gitignore: added Data/cleaned, Output, prism/tables/*.{rds,txt,csv}, temp artifacts
+
+**Decisions:**
+- M-2 Measurement Appendix deferred — requires reading codebook PDFs; TODO placeholder left in manuscript
+- MOD-8 (Sylvester 2022) skipped — key absent from references.bib
+- CSV/RDS/log files excluded from git (intermediate products only)
+
+**Results:**
+- Manuscript compiles clean: 54 pages, 0 errors (XeLaTeX + biber, 3 passes)
+- Phase 3 tasks completed: MIN-4, MIN-6, MR-C, MOD-5, MOD-7, MIN-5, MIN-7, DR-A, MIN-2 (partial), 5 new citations, 7 new appendix tables wired
+
+**Commits:**
+- `5e08ef6` R&R manuscript integration: Phase 1 appendix wiring + rule/script updates
+- `c8b9361` R&R Phase 3: CLARIFICATION + MINOR writer pass
+
+**Status:**
+- Done: Phase 1 ✓, Phase 2 ✓, Phase 3 ✓
+- Pending: Phase 4 — fresh re-review (domain-referee + methods-referee, POQ calibration)
+- Target: paper quality ≥ 85, overall score ≥ 90

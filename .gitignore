@@ -57,3 +57,26 @@ Thumbs.db
 # Survey microdata — raw files are sensitive / proprietary
 Data/raw/*
 !Data/raw/.gitkeep
+
+# Data intermediates
+Data/cleaned/*
+!Data/cleaned/.gitkeep
+Data/codebooks/*
+!Data/codebooks/.gitkeep
+
+# R intermediate outputs (logs, objects, CSVs from analysis runs)
+prism/tables/*.rds
+prism/tables/*.txt
+prism/tables/*.csv
+Output/
+
+# R workspace / temp
+scripts/R/.RDataTmp
+*.RDataTmp
+
+# LaTeX test artifacts
+prism/manuscript_test.*
+prism/manuscript.bcf
+
+# Sanity-check figures (not for publication)
+prism/figures/fig_sanity_*.pdf
