@@ -1,15 +1,13 @@
-\begin{threeparttable}
 \begin{tabular}{lrrrrrrrr}
 \toprule
-& \multicolumn{4}{c}{Complete case} & \multicolumn{4}{c}{Multiple imputation (m=10)} \\
+& \multicolumn{4}{c}{Complete case} & \multicolumn{4}{c}{MI ($m=10$)} \\
 \cmidrule(lr){2-5} \cmidrule(lr){6-9}
 Parameter & Est. & SE & $p$ & $N$ & Est. & SE & $p$ & FMI \\
 \midrule
-S+A: warmth_z x blame_china & 0.1289 & 0.1142 & 0.259 & 4234 & 0.1608 & 0.1093 & 0.141 & 0.000 \\
-S+A: blame effect at warmth=+1 & 2.7711 & 0.1635 & <0.001 & 4234 & 2.8533 & 0.1539 & <0.001 & 0.000 \\
-S+A: warmth_z main effect & -0.2466 & 0.1001 & 0.014 & 4234 & -0.2783 & 0.0965 & 0.004 & 0.000 \\
-S-only: warmth_z x blame_china & -0.2098 & 0.0893 & 0.019 & 4234 & -0.1711 & 0.0828 & 0.039 & 0.001 \\
-S-only: blame effect at warmth=+1 & 0.6003 & 0.1340 & <0.001 & 4234 & 0.6815 & 0.1215 & <0.001 & 0.001 \\
+S+A: warmth$\times$blame (log-odds) & 0.129 & 0.114 & 0.259 & 4234 & 0.161 & 0.109 & 0.141 & 0.000 \\
+S+A: blame effect at warmth$=+1$ & 2.771 & 0.164 & $<$0.001 & 4234 & 2.853 & 0.154 & $<$0.001 & 0.000 \\
+S+A: warmth main effect & $-$0.247 & 0.100 & 0.014 & 4234 & $-$0.278 & 0.097 & 0.004 & 0.000 \\
+S-only: warmth$\times$blame (log-odds) & $-$0.210 & 0.089 & 0.019 & 4234 & $-$0.171 & 0.083 & 0.039 & 0.001 \\
+S-only: blame effect at warmth$=+1$ & 0.600 & 0.134 & $<$0.001 & 4234 & 0.682 & 0.122 & $<$0.001 & 0.001 \\
 \bottomrule
 \end{tabular}
-\end{threeparttable}
