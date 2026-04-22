@@ -10,8 +10,8 @@
 #'
 #' @input  data/clean/pooled.rds, data/clean/clean_2024.rds,
 #'         data/clean/clean_2025.rds
-#' @output output/tables/tab1–tab7 (.tex + .csv), output/figures/fig1–fig5
-#'         (.pdf), output/tables/descriptives_log.txt
+#' @output prism/tables/tab1–tab7 (.tex + .csv), prism/figures/fig1–fig5
+#'         (.pdf), prism/tables/descriptives_log.txt
 #'
 #' @depends here, tidyverse, survey, srvyr, kableExtra, scales
 #' ============================================================================
@@ -28,8 +28,8 @@ library(scales)
 set.seed(20250217)
 
 # Ensure output directories exist (for fresh-clone reproducibility)
-dir.create(here("output", "tables"), recursive = TRUE, showWarnings = FALSE)
-dir.create(here("output", "figures"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here("prism", "tables"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here("prism", "figures"), recursive = TRUE, showWarnings = FALSE)
 
 # Environment-based logging (same pattern as 01_clean.R)
 log_env <- new.env(parent = emptyenv())
@@ -59,12 +59,10 @@ negative_red   <- "#dc3545"
 year_colors <- c("2024" = pax_accent, "2025" = pax_highlight)
 
 #' Custom ggplot2 theme for PAX sapiens publications
-#' @param base_size Base font size (default 11)
-theme_pax <- function(base_size = 11) {
-  theme_minimal(base_size = base_size) +
+#' @param base_size Base font size (default 14)
+theme_pax <- function(base_size = 14) {
+  theme_minimal(base_size = base_size, base_family = "serif") +
     theme(
-      plot.title    = element_text(face = "bold", size = base_size + 2),
-      plot.subtitle = element_text(color = neutral_gray),
       legend.position = "bottom",
       panel.grid.minor = element_blank(),
       strip.text = element_text(face = "bold")
@@ -332,16 +330,16 @@ yoy_test <- function(des_pool, outcome_var, binary = TRUE, subset_des = NULL) {
 #' @param tbl_df Tibble or data frame
 #' @param name File stem (no extension)
 #' @param caption LaTeX table caption
-save_table <- function(tbl_df, name, caption = "") {
+save_table <- function(tbl_df, name) {
   # CSV
-  csv_path <- here("output", "tables", paste0(name, ".csv"))
+  csv_path <- here("prism", "tables", paste0(name, ".csv"))
   write_csv(tbl_df, csv_path)
 
   # LaTeX
-  tex_path <- here("output", "tables", paste0(name, ".tex"))
+  tex_path <- here("prism", "tables", paste0(name, ".tex"))
   latex_out <- tbl_df %>%
-    kbl(format = "latex", booktabs = TRUE, caption = caption, linesep = "") %>%
-    kable_styling(latex_options = c("hold_position"))
+    kbl(format = "latex", booktabs = TRUE, caption = NULL, linesep = "") %>%
+    kable_styling(latex_options = c("scale_down"))
   writeLines(as.character(latex_out), tex_path)
 
   log_msg(sprintf("  Saved: %s.tex + %s.csv", name, name))
@@ -353,9 +351,9 @@ save_table <- function(tbl_df, name, caption = "") {
 #' @param w Width in inches (default 6.5)
 #' @param h Height in inches (default 4.5)
 save_figure <- function(plot, name, w = 6.5, h = 4.5) {
-  pdf_path <- here("output", "figures", paste0(name, ".pdf"))
+  pdf_path <- here("prism", "figures", paste0(name, ".pdf"))
   ggsave(pdf_path, plot = plot, width = w, height = h, dpi = 300,
-         bg = "white")
+         bg = "transparent")
   log_msg(sprintf("  Saved: %s.pdf (%s x %s in)", name, w, h))
 }
 
@@ -431,8 +429,7 @@ tab1_wide <- tab1_long %>%
   pivot_wider(names_from = year, values_from = cell, names_prefix = "y") %>%
   rename(Variable = variable, Category = level, `2024` = y2024, `2025` = y2025)
 
-save_table(tab1_wide, "tab1_demographics",
-           caption = "Sample Demographics: Weighted Proportions (Unweighted N)")
+save_table(tab1_wide, "tab1_demographics")
 
 
 # --- Table 2: Responsibility Battery -----------------------------------------
@@ -480,8 +477,7 @@ tab2 <- bind_rows(tab2_rows) %>%
   arrange(desc(.avg)) %>%
   select(-.avg)
 
-save_table(tab2, "tab2_responsibility",
-           caption = "Who Is Responsible for Opioid Deaths? Weighted \\% Selecting (95\\% CI)")
+save_table(tab2, "tab2_responsibility")
 
 
 # --- Table 3: Most Responsible (q8) ------------------------------------------
@@ -520,8 +516,7 @@ n_miss_24 <- sum(is.na(clean_2024$most_responsible))
 n_miss_25 <- sum(is.na(clean_2025$most_responsible))
 log_msg(sprintf("    q8 missing: 2024=%d, 2025=%d", n_miss_24, n_miss_25))
 
-save_table(tab3, "tab3_most_responsible",
-           caption = "Single Most Responsible Group: Weighted \\% (Unweighted N)")
+save_table(tab3, "tab3_most_responsible")
 
 
 # --- Table 4: Policy Approaches ----------------------------------------------
@@ -571,8 +566,7 @@ tab4 <- bind_rows(tab4_rows) %>%
   arrange(desc(.avg)) %>%
   select(-.avg)
 
-save_table(tab4, "tab4_approaches",
-           caption = "Useful Approaches to Fentanyl Crisis: Weighted \\% Endorsing (95\\% CI)")
+save_table(tab4, "tab4_approaches")
 
 
 # --- Table 5: China Warmth ---------------------------------------------------
@@ -607,8 +601,7 @@ tab5_stats <- warmth_stats %>%
   mutate(across(c(mean, se, sd), ~sprintf("%.2f", .))) %>%
   select(year, mean, sd, se, n_unwtd)
 
-save_table(warmth_dist_wide, "tab5_warmth",
-           caption = "Opinion of China (1=Very Negative to 7=Very Positive): Weighted Distribution")
+save_table(warmth_dist_wide, "tab5_warmth")
 log_msg(sprintf("    2024: mean=%.2f (SD=%.2f), 2025: mean=%.2f (SD=%.2f)",
                 warmth_stats$mean[1], warmth_stats$sd[1],
                 warmth_stats$mean[2], warmth_stats$sd[2]))
@@ -688,8 +681,7 @@ for (i in seq_along(subgroup_vars)) {
 tab6 <- bind_rows(tab6_rows) %>%
   mutate(`YoY p` = ifelse(is.na(`YoY p`), "", `YoY p`))
 
-save_table(tab6, "tab6_subgroup_blame",
-           caption = "P(Blame China) by Demographic Subgroup: Weighted \\% (95\\% CI, DEFF)")
+save_table(tab6, "tab6_subgroup_blame")
 
 
 # --- Table 7: China Module Summary -------------------------------------------
@@ -714,8 +706,7 @@ tab7 <- bind_rows(tab7_rows) %>%
   rename(Variable = variable, `2024` = `2024_cell`, `2025` = `2025_cell`,
          `N 2024` = `2024_n_unwtd`, `N 2025` = `2025_n_unwtd`)
 
-save_table(tab7, "tab7_china_module",
-           caption = "China Module: Weighted Means (SD) by Year")
+save_table(tab7, "tab7_china_module")
 
 
 # =============================================================================
@@ -754,8 +745,8 @@ p1 <- ggplot(fig1_df, aes(x = prop, y = group, fill = year)) +
                  orientation = "y") +
   scale_x_continuous(labels = percent_format(), limits = c(0, 1)) +
   scale_fill_manual(values = year_colors, name = "Year") +
-  labs(title = "Who Is Responsible for Opioid Deaths?",
-       subtitle = "Weighted proportion selecting each group",
+  labs(title = NULL,
+       subtitle = NULL,
        x = "Proportion", y = NULL) +
   theme_pax()
 
@@ -773,8 +764,8 @@ p2 <- ggplot(fig2_df, aes(x = level, y = pct / 100, fill = year)) +
   geom_col(position = position_dodge(width = 0.7), width = 0.6) +
   scale_y_continuous(labels = percent_format()) +
   scale_fill_manual(values = year_colors, name = "Year") +
-  labs(title = "Distribution of China Warmth",
-       subtitle = "1 = Very Negative to 7 = Very Positive (Weighted)",
+  labs(title = NULL,
+       subtitle = NULL,
        x = "Warmth Level", y = "Proportion") +
   theme_pax()
 
@@ -810,8 +801,8 @@ p3 <- ggplot(fig3_df, aes(x = tercile, y = prob, fill = year)) +
                 position = position_dodge(width = 0.7), width = 0.2) +
   scale_y_continuous(labels = percent_format(), limits = c(0, 1)) +
   scale_fill_manual(values = year_colors, name = "Year") +
-  labs(title = "P(Blame China) by China Warmth Tercile",
-       subtitle = "Weighted probability of selecting China as responsible",
+  labs(title = NULL,
+       subtitle = NULL,
        x = "China Warmth Tercile", y = "P(Blame China = 1)") +
   theme_pax()
 
@@ -846,8 +837,8 @@ p4 <- ggplot(fig4_df, aes(x = party, y = prob, fill = year)) +
                 position = position_dodge(width = 0.7), width = 0.2) +
   scale_y_continuous(labels = percent_format(), limits = c(0, 1)) +
   scale_fill_manual(values = year_colors, name = "Year") +
-  labs(title = "P(Blame China) by Party Identification",
-       subtitle = "Weighted probability of selecting China as responsible",
+  labs(title = NULL,
+       subtitle = NULL,
        x = NULL, y = "P(Blame China = 1)") +
   theme_pax()
 
@@ -883,8 +874,8 @@ p5 <- ggplot(fig5_df, aes(x = prop, y = approach, color = year)) +
                 orientation = "y") +
   scale_x_continuous(labels = percent_format(), limits = c(0, 1)) +
   scale_color_manual(values = year_colors, name = "Year") +
-  labs(title = "Useful Approaches to Address the Fentanyl Crisis",
-       subtitle = "Weighted proportion endorsing each approach",
+  labs(title = NULL,
+       subtitle = NULL,
        x = "Proportion Endorsing", y = NULL) +
   theme_pax()
 
@@ -907,7 +898,7 @@ descriptives_objects <- list(
   fig4_data = fig4_df, fig5_data = fig5_df
 )
 saveRDS(descriptives_objects,
-        here("output", "tables", "descriptives_objects.rds"))
+        here("prism", "tables", "descriptives_objects.rds"))
 log_msg("  Saved descriptives_objects.rds")
 
 # Write descriptives log
@@ -916,6 +907,6 @@ log_msg("=======================================================================
 log_msg("DESCRIPTIVES COMPLETE")
 log_msg("========================================================================")
 
-log_path <- here("output", "tables", "descriptives_log.txt")
+log_path <- here("prism", "tables", "descriptives_log.txt")
 writeLines(log_env$entries, log_path)
 message(sprintf("Descriptives log saved to: %s", log_path))

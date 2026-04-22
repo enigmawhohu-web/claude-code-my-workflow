@@ -1,12 +1,9 @@
-# CLAUDE.MD -- Applied Econometrics Research with Claude Code
+# CLAUDE.MD -- Public Opinion on Fentanyl Policy
 
-<!-- HOW TO USE: Replace [BRACKETED PLACEHOLDERS] with your project info.
-     Customize Beamer environments for your talk preamble.
-     Keep this file under ~150 lines — Claude loads it every session.
+<!-- Keep this file under ~150 lines — Claude loads it every session.
      See the guide at https://hugosantanna.github.io/clo-author/ for full documentation. -->
 
-**Project:** [YOUR PROJECT NAME]
-**Institution:** [YOUR INSTITUTION]
+**Project:** Public Opinion on Fentanyl Policy: Cooperation vs. Punishment (2024–2025)
 **Branch:** main
 
 ---
@@ -15,7 +12,7 @@
 
 - **Plan first** -- enter plan mode before non-trivial tasks; save plans to `quality_reports/plans/`
 - **Verify after** -- compile and confirm output at the end of every task
-- **Single source of truth** -- Paper `main.tex` is authoritative; talks and supplements derive from it
+- **Single source of truth** -- `prism/manuscript.tex` is authoritative; talks and supplements derive from it
 - **Quality gates** -- weighted aggregate score; nothing ships below 80/100; see `quality.md`
 - **Worker-critic pairs** -- every creator has a paired critic; critics never edit files
 - **[LEARN] tags** -- when corrected, save `[LEARN:category] wrong → right` to MEMORY.md
@@ -24,16 +21,15 @@
 
 ## Getting Started
 
-1. Fill in the `[BRACKETED PLACEHOLDERS]` in this file
-2. Run `/discover interview [topic]` to build your research specification
-3. Or run `/new-project [topic]` for the full orchestrated pipeline
+1. Run `/discover interview fentanyl public opinion` to build the research specification
+2. Or run `/new-project fentanyl policy preferences` for the full orchestrated pipeline
 
 ---
 
 ## Folder Structure
 
 ```
-[YOUR-PROJECT]/
+poll-2025-clo/
 ├── CLAUDE.MD                    # This file
 ├── .claude/                     # Rules, skills, agents, hooks
 ├── Bibliography_base.bib        # Centralized bibliography
@@ -46,8 +42,9 @@
 │   ├── short_talk.tex           # 15 min, conference session
 │   └── lightning_talk.tex       # 5 min, spiel/elevator pitch
 ├── Data/                        # Project data
-│   ├── raw/                     # Original untouched data (often gitignored)
-│   └── cleaned/                 # Processed datasets ready for analysis
+│   ├── raw/                     # Original survey files (gitignored)
+│   ├── cleaned/                 # Processed datasets ready for analysis
+│   └── codebooks/               # Variable documentation and survey instruments
 ├── Output/                      # Intermediate results (logs, temp files)
 ├── Figures/                     # Final figures (.pdf, .png) referenced in paper
 ├── Tables/                      # Final tables (.tex) referenced in paper
@@ -66,13 +63,19 @@
 ## Commands
 
 ```bash
-# Paper compilation (3-pass, XeLaTeX only)
-cd Paper && TEXINPUTS=../Preambles:$TEXINPUTS xelatex -interaction=nonstopmode main.tex
-BIBINPUTS=..:$BIBINPUTS bibtex main
-TEXINPUTS=../Preambles:$TEXINPUTS xelatex -interaction=nonstopmode main.tex
-TEXINPUTS=../Preambles:$TEXINPUTS xelatex -interaction=nonstopmode main.tex
+# Paper compilation (3-pass, XeLaTeX + biber — biblatex-chicago requires biber)
+cd prism && xelatex -interaction=nonstopmode manuscript.tex
+biber manuscript
+xelatex -interaction=nonstopmode manuscript.tex
+xelatex -interaction=nonstopmode manuscript.tex
 
-# Talk compilation
+# Alternative: pdfLaTeX (preamble auto-detects via iftex)
+cd prism && pdflatex -interaction=nonstopmode manuscript.tex
+biber manuscript
+pdflatex -interaction=nonstopmode manuscript.tex
+pdflatex -interaction=nonstopmode manuscript.tex
+
+# Talk compilation (when talks exist)
 cd Talks && TEXINPUTS=../Preambles:$TEXINPUTS xelatex -interaction=nonstopmode talk.tex
 ```
 
@@ -108,14 +111,9 @@ See `quality.md` for weighted aggregation formula.
 
 ---
 
-<!-- CUSTOMIZE: Replace the example entries below with your own
-     Beamer environments for talks. -->
-
 ## Beamer Custom Environments (Talks)
 
-| Environment       | Effect        | Use Case       |
-|-------------------|---------------|----------------|
-| `[your-env]`      | [Description] | [When to use]  |
+*Not yet configured — will be set up when talks are created.*
 
 ---
 
@@ -123,7 +121,12 @@ See `quality.md` for weighted aggregation formula.
 
 | Component | File | Status | Description |
 |-----------|------|--------|-------------|
-| Paper | `Paper/main.tex` | [draft/submitted/R&R] | [Brief description] |
-| Data | `scripts/R/` | [complete/in-progress] | [Analysis description] |
-| Replication | `Replication/` | [not started/ready] | [Deposit status] |
-| Job Market Talk | `Talks/job_market_talk.tex` | -- | [Status] |
+| Paper | `prism/manuscript.tex` | draft complete | "When Warm Feelings Harden" — issue-bounded conditionality, warmth × blame |
+| Preamble | `prism/manuscript-preamble.tex` | complete | Chicago author-date (biblatex-chicago/biber), XeLaTeX + pdfLaTeX dual support |
+| Bibliography | `prism/references.bib` | complete | Zotero-exported, ~50+ entries |
+| Tables | `prism/tables/` | complete | 7 main tables + 8 appendix tables |
+| Figures | `prism/figures/` | complete | 4 main figures + 2 appendix figures |
+| Data | `Data/raw/` | not yet placed | Original 2024 and 2025 YouGov survey waves |
+| Analysis | `scripts/R/` | not yet placed | R scripts for survey-weighted analysis |
+| Replication | `Replication/` | not started | Replication package for deposit |
+| Talks | `Talks/` | -- | Not yet planned |

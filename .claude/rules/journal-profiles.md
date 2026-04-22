@@ -135,6 +135,81 @@ When `/review --peer [journal]` is invoked:
 
 ---
 
+## Political Science — Top General
+
+### American Political Science Review (APSR)
+**Focus:** All subfields of political science — the discipline's flagship journal
+**Bar:** Must make a significant contribution to political science broadly. Big question, rigorous execution, theoretical or empirical innovation.
+**Domain referee adjusts:** "Does this advance our understanding of politics?" Contribution must transcend the subfield. Strong theoretical grounding expected — even empirical papers need a clear theoretical framework. Comparative and historical breadth valued.
+**Methods referee adjusts:** Appropriate methods for the question. Survey research must demonstrate careful design, weighting, and sampling. Experiments need pre-registration or strong justification. Observational claims need careful attention to identification.
+**Typical concerns:** "Is this political science or just policy analysis?" "What's the theoretical contribution beyond the empirical finding?" "Does this speak to the discipline broadly?"
+
+### American Journal of Political Science (AJPS)
+**Focus:** All subfields — particularly strong in American politics, political behavior, and methodology
+**Bar:** Rigorous empirical or theoretical contribution. Slightly more methods-forward than APSR. Values innovation in measurement or design.
+**Domain referee adjusts:** Methodological sophistication valued highly. Novel data or measurement approaches get attention. Clear causal reasoning expected even in observational work. American politics and behavior papers are well-represented.
+**Methods referee adjusts:** State-of-the-art methods expected. Survey experiments should follow best practices (pre-registration, manipulation checks, attention checks). Bayesian and ML approaches welcome if well-motivated. Robustness to specification choices.
+**Typical concerns:** "Is the method appropriate and state-of-the-art?" "Can you rule out alternative explanations?" "What's the mechanism?"
+
+### Journal of Politics (JOP)
+**Focus:** All subfields of political science — strong in American politics, comparative, IR
+**Bar:** Solid empirical contribution with clear political science relevance. Slightly more accessible bar than APSR/AJPS.
+**Domain referee adjusts:** Clear research question and clean execution matter most. Policy relevance appreciated but not required. Good fit for well-executed studies that advance a specific literature. Comparative extensions valued.
+**Methods referee adjusts:** Sound methods appropriate to the question. Don't need cutting-edge methods if the design is clean. Standard errors and inference must be careful. Replication materials expected.
+**Typical concerns:** "Is this incremental?" "How does this change what we know?" "Is the scope too narrow?"
+
+---
+
+## Political Science — Top Field
+
+### Public Opinion Quarterly (POQ)
+**Focus:** Public opinion measurement, survey methodology, political attitudes, media effects
+**Bar:** Must contribute to understanding of opinion formation, measurement, or survey methodology. The premier outlet for public opinion research.
+**Domain referee adjusts:** Survey methodology must be impeccable — this is the audience that will scrutinize every design choice. Question wording, mode effects, response rates all matter. Theoretical grounding in opinion formation (Zaller, dual-process models) expected. Historical context of the opinion trend valued.
+**Methods referee adjusts:** Survey design is the method. Weighting strategy must be transparent and justified. Margins of error reported. Question wording effects addressed. If experimental, full design details and manipulation checks. Split-ballot experiments valued.
+**Typical concerns:** "Is the sample representative?" "How sensitive are results to question wording?" "What does this add beyond Pew/Gallup/ANES?" "Have you addressed social desirability?" "Mode effects?"
+
+### International Organization (IO)
+**Focus:** International relations theory and empirical IR — institutions, cooperation, conflict, political economy
+**Bar:** Must advance IR theory. Empirical papers need strong theoretical motivation. Among the most prestigious IR journals.
+**Domain referee adjusts:** Theory-driven research valued above all. Public opinion papers must connect to IR theory (audience costs, two-level games, rally effects, threat perception). Institutional and structural arguments expected. Comparative/cross-national scope preferred over single-country.
+**Methods referee adjusts:** Causal identification important but theory comes first. Survey experiments must speak to theoretical mechanisms. Observational work needs careful identification. Large-N cross-national analysis common.
+**Typical concerns:** "What's the IR theory?" "How does public opinion matter for international outcomes?" "Is this comparative or US-only?" "Does this generalize beyond the current political moment?"
+
+### International Security
+**Focus:** Security studies — military affairs, defense policy, nuclear strategy, terrorism, emerging threats
+**Bar:** Must engage security studies debates directly. Strong policy relevance expected. Accessible writing valued.
+**Domain referee adjusts:** Policy relevance is paramount — what should decision-makers learn? Fentanyl as a security issue (transnational threats, non-traditional security) needs clear framing. China-specific security implications must be explicit. Historical cases and analogies valued.
+**Methods referee adjusts:** Qualitative and mixed-methods work is common and welcome. Survey research must be clearly presented to a non-methods audience. Policy implications must be concrete, not abstract. Practitioner accessibility matters.
+**Typical concerns:** "What are the security implications?" "Is this a security issue or a public health issue?" "What should policymakers do?" "How does this connect to broader US-China competition?"
+
+### Journal of Conflict Resolution (JCR)
+**Focus:** Conflict, peace, cooperation — quantitative and formal approaches to IR
+**Bar:** Rigorous quantitative or formal contribution to understanding conflict and cooperation. Methods-forward IR.
+**Domain referee adjusts:** Quantitative rigor expected. Cooperation vs. punishment framing fits well. Game-theoretic or bargaining frameworks valued. Cross-national or experimental designs preferred. Must connect to conflict/cooperation literature explicitly.
+**Methods referee adjusts:** Sophisticated quantitative methods expected. Survey experiments should follow best practices. Formal models welcome. Careful inference and robustness. Large-N analysis or experimental designs.
+**Typical concerns:** "How does this relate to the cooperation/conflict literature?" "Is the formal framework clear?" "What's the theoretical mechanism?" "External validity beyond the US case?"
+
+---
+
+## Area Studies
+
+### Journal of Contemporary China (JCC)
+**Focus:** All aspects of contemporary China — politics, economics, society, foreign relations
+**Bar:** Must demonstrate deep knowledge of China and contribute to understanding of Chinese politics, society, or foreign relations. Area expertise essential.
+**Domain referee adjusts:** China-specific knowledge is non-negotiable. US public opinion about China must be contextualized within the bilateral relationship. Knowledge of Chinese domestic politics, foreign policy discourse, and elite debates expected. Historical context of US-China relations valued.
+**Methods referee adjusts:** Mixed methods common. Survey research welcome but must be grounded in area knowledge. Qualitative evidence from Chinese sources valued alongside quantitative analysis. Translation and cultural context matter.
+**Typical concerns:** "Does the author understand China?" "How is this situated in the US-China relationship literature?" "What Chinese sources are used?" "Is this US-centric or genuinely about China?"
+
+### Chinese Journal of International Politics (CJIP)
+**Focus:** International politics with emphasis on China's role — theory, empirical analysis, and policy
+**Bar:** Must engage with debates about China's international role. Theoretical ambition valued. Published by Oxford UP, increasingly influential.
+**Domain referee adjusts:** China's rise and international order debates are central. Public opinion research must connect to foreign policy output or international audience costs. Constructivist and identity-based arguments about threat perception fit well. US-China strategic competition framing.
+**Methods referee adjusts:** Pluralistic methods — quantitative, qualitative, and theoretical all welcome. Survey data valued if it illuminates public constraints on foreign policy. Must engage with both Western and Chinese IR scholarship.
+**Typical concerns:** "How does this contribute to understanding China's international role?" "What are the implications for US-China relations?" "Does this engage Chinese IR scholarship?"
+
+---
+
 ## Add Your Own Journal
 
 Copy this template and add it above this section:

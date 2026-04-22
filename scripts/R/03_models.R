@@ -14,15 +14,15 @@
 #'
 #' @input  data/clean/pooled.rds, data/clean/clean_2024.rds,
 #'         data/clean/clean_2025.rds
-#' @output output/tables/tab2_phase3_main_models (.tex + .csv)
-#'         output/tables/app_tab_phase3_r1_models (.tex + .csv)
-#'         output/tables/app_tab_phase3_svyolr_q15items (.tex + .csv)
-#'         output/figures/fig2a_posture_warmthXblame_byyear.pdf
-#'         output/figures/fig2a_posture_warmthXblameALT_byyear.pdf
-#'         output/figures/fig_coef_forest_interaction.pdf
-#'         output/figures/fig_sanity_binned_means.pdf
-#'         output/tables/phase3_objects.rds
-#'         output/tables/phase3_log.txt
+#' @output prism/tables/tab2_phase3_main_models (.tex + .csv)
+#'         prism/tables/app_tab_phase3_r1_models (.tex + .csv)
+#'         prism/tables/app_tab_phase3_svyolr_q15items (.tex + .csv)
+#'         prism/figures/fig2a_posture_warmthXblame_byyear.pdf
+#'         prism/figures/fig2a_posture_warmthXblameALT_byyear.pdf
+#'         prism/figures/fig_coef_forest_interaction.pdf
+#'         prism/figures/fig_sanity_binned_means.pdf
+#'         prism/tables/phase3_objects.rds
+#'         prism/tables/phase3_log.txt
 #'
 #' @depends here, tidyverse, survey, srvyr, kableExtra, scales,
 #'          marginaleffects, psych, texreg
@@ -41,11 +41,12 @@ library(scales)
 library(marginaleffects)
 library(psych)
 library(texreg)
+library(mice)
 
 set.seed(20250217)
 
-dir.create(here("output", "tables"), recursive = TRUE, showWarnings = FALSE)
-dir.create(here("output", "figures"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here("prism", "tables"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here("prism", "figures"), recursive = TRUE, showWarnings = FALSE)
 
 # --- Logging ---
 # log_msg: writes to file AND console (use sparingly for major milestones)
@@ -83,10 +84,8 @@ spec_colors  <- c("A" = pax_accent, "B" = pax_highlight)
 
 #' Custom ggplot2 theme for PAX sapiens publications
 theme_pax <- function(base_size = 14) {
-  theme_minimal(base_size = base_size) +
+  theme_minimal(base_size = base_size, base_family = "serif") +
     theme(
-      plot.title       = element_text(face = "bold", size = base_size + 2),
-      plot.subtitle    = element_text(color = neutral_gray),
       legend.position  = "bottom",
       panel.grid.minor = element_blank(),
       strip.text       = element_text(face = "bold")
@@ -94,20 +93,19 @@ theme_pax <- function(base_size = 14) {
 }
 
 #' Save table as LaTeX (.tex) and CSV (.csv)
-save_table <- function(tbl_df, name, caption = "") {
-  csv_path <- here("output", "tables", paste0(name, ".csv"))
+save_table <- function(tbl_df, name) {
+  csv_path <- here("prism", "tables", paste0(name, ".csv"))
   write_csv(tbl_df, csv_path)
-  tex_path <- here("output", "tables", paste0(name, ".tex"))
+  tex_path <- here("prism", "tables", paste0(name, ".tex"))
   latex_out <- tbl_df %>%
-    kbl(format = "latex", booktabs = TRUE, caption = caption, linesep = "") %>%
-    kable_styling(latex_options = c("hold_position"))
+    kbl(format = "latex", booktabs = TRUE, caption = NULL, linesep = "")
   writeLines(as.character(latex_out), tex_path)
   log_msg(sprintf("  Saved: %s.tex + %s.csv", name, name))
 }
 
 #' Save ggplot figure as vector PDF
 save_figure <- function(plot, name, w = 6.5, h = 4.5) {
-  pdf_path <- here("output", "figures", paste0(name, ".pdf"))
+  pdf_path <- here("prism", "figures", paste0(name, ".pdf"))
   dev <- tryCatch(
     {
       tmp <- tempfile(fileext = ".pdf")
@@ -117,7 +115,7 @@ save_figure <- function(plot, name, w = 6.5, h = 4.5) {
     error = function(e) "pdf"
   )
   ggsave(pdf_path, plot = plot, width = w, height = h,
-         device = dev, dpi = 300, bg = "white")
+         device = dev, dpi = 300, bg = "transparent")
   dev_label <- if (identical(dev, cairo_pdf)) "cairo_pdf" else "pdf"
   log_msg(sprintf("  Saved: %s.pdf (%s x %s in, device=%s)",
                   name, w, h, dev_label))
@@ -139,9 +137,9 @@ fmt_p <- function(p) {
 # --- Load data ---
 log_only("")
 log_only("--- Loading Data ---")
-pooled     <- readRDS(here("data", "clean", "pooled.rds"))
-clean_2024 <- readRDS(here("data", "clean", "clean_2024.rds"))
-clean_2025 <- readRDS(here("data", "clean", "clean_2025.rds"))
+pooled     <- readRDS(here("data", "cleaned", "pooled.rds"))
+clean_2024 <- readRDS(here("data", "cleaned", "clean_2024.rds"))
+clean_2025 <- readRDS(here("data", "cleaned", "clean_2025.rds"))
 log_msg(sprintf("  Loaded: pooled=%d, 2024=%d, 2025=%d",
                 nrow(pooled), nrow(clean_2024), nrow(clean_2025)))
 
@@ -665,6 +663,144 @@ if (!is.null(apool_unsure)) {
 rm(pooled_exp0, des_pool_exp0)
 
 
+# --- MOD-4: Triple interaction (warmth x blame x year) (R&R) ---
+log_only("")
+log_msg("  MOD-4: Triple interaction warmth_z * blame_china * factor(year)")
+
+apool_triple <- fit_spec(
+  paste0("warmth_z * blame_china * factor(year) + ", ctrl_rhs),
+  des_pool, "apool_triple"
+)
+
+# Default container for the appendix table rows
+triple_table <- NULL
+
+if (!is.null(apool_triple)) {
+  cs_t   <- coef(summary(apool_triple))
+  vcov_t <- vcov(apool_triple)
+  n_t    <- nobs(apool_triple)
+
+  # Identify the year=2025 interaction term (robust to factor(year)2025 label)
+  int_main_name <- "warmth_z:blame_china"
+  tri_candidates <- grep("^warmth_z:blame_china:factor\\(year\\)",
+                         rownames(cs_t), value = TRUE)
+  tri_name <- if (length(tri_candidates) >= 1) tri_candidates[1] else NA_character_
+
+  if (int_main_name %in% rownames(cs_t) && !is.na(tri_name)) {
+    b_main <- cs_t[int_main_name, "Estimate"]
+    se_main <- cs_t[int_main_name, "Std. Error"]
+    p_main <- cs_t[int_main_name, "Pr(>|t|)"]
+
+    b_diff <- cs_t[tri_name, "Estimate"]
+    se_diff <- cs_t[tri_name, "Std. Error"]
+    p_diff <- cs_t[tri_name, "Pr(>|t|)"]
+
+    # Delta-method for implied 2025 interaction = main + diff
+    v_main <- vcov_t[int_main_name, int_main_name]
+    v_diff <- vcov_t[tri_name, tri_name]
+    cov_md <- vcov_t[int_main_name, tri_name]
+    b_2025 <- b_main + b_diff
+    se_2025 <- sqrt(v_main + v_diff + 2 * cov_md)
+    # z-based p-value (t df approx large)
+    z_2025 <- b_2025 / se_2025
+    p_2025 <- 2 * pnorm(-abs(z_2025))
+    ci_lo_2025 <- b_2025 - 1.96 * se_2025
+    ci_hi_2025 <- b_2025 + 1.96 * se_2025
+
+    ci_lo_main <- b_main - 1.96 * se_main
+    ci_hi_main <- b_main + 1.96 * se_main
+    ci_lo_diff <- b_diff - 1.96 * se_diff
+    ci_hi_diff <- b_diff + 1.96 * se_diff
+
+    log_msg(sprintf("    2024 interaction (warmth_z:blame_china):      b=%.4f, SE=%.4f, p=%s",
+                    b_main, se_main, fmt_p(p_main)))
+    log_msg(sprintf("    2025-2024 differential (triple term [%s]): b=%.4f, SE=%.4f, p=%s",
+                    tri_name, b_diff, se_diff, fmt_p(p_diff)))
+    log_msg(sprintf("    2025 implied interaction (main + diff):      b=%.4f, SE=%.4f, p=%s",
+                    b_2025, se_2025, fmt_p(p_2025)))
+
+    triple_table <- tibble(
+      Quantity = c(
+        "2024 interaction (warmth x blame)",
+        "2025 - 2024 differential (triple term)",
+        "2025 interaction (implied sum)"
+      ),
+      Estimate = c(b_main, b_diff, b_2025),
+      SE = c(se_main, se_diff, se_2025),
+      `95% CI` = c(
+        sprintf("[%.4f, %.4f]", ci_lo_main, ci_hi_main),
+        sprintf("[%.4f, %.4f]", ci_lo_diff, ci_hi_diff),
+        sprintf("[%.4f, %.4f]", ci_lo_2025, ci_hi_2025)
+      ),
+      `p-value` = c(fmt_p(p_main), fmt_p(p_diff), fmt_p(p_2025)),
+      N = rep(n_t, 3)
+    ) %>%
+      mutate(
+        Estimate = sprintf("%.4f", Estimate),
+        SE = sprintf("%.4f", SE)
+      )
+
+    save_table(triple_table, "app_tab_triple_interaction")
+  } else {
+    log_msg("    WARNING: expected coefficients not found in apool_triple; skipping table")
+  }
+} else {
+  log_msg("    apool_triple failed; skipping MOD-4 table")
+}
+
+
+# --- MOD-6: Within-wave replication of warmth x blame interaction (R&R) ---
+log_only("")
+log_msg("  MOD-6: Within-wave replication of main interaction (a24, a25, apool)")
+
+extract_wave_row <- function(mod, wave_label) {
+  if (is.null(mod)) {
+    return(tibble(
+      Wave = wave_label, N = NA_integer_,
+      `Warmth (main)` = "—",
+      `Interaction (est)` = "—",
+      `Interaction (SE)` = "—",
+      `Interaction (p)` = "—",
+      `Interaction 95% CI` = "—"
+    ))
+  }
+  cs <- coef(summary(mod))
+  b_w  <- cs["warmth_z", "Estimate"]
+  se_w <- cs["warmth_z", "Std. Error"]
+  b_i  <- cs["warmth_z:blame_china", "Estimate"]
+  se_i <- cs["warmth_z:blame_china", "Std. Error"]
+  p_i  <- cs["warmth_z:blame_china", "Pr(>|t|)"]
+  tibble(
+    Wave = wave_label,
+    N = nobs(mod),
+    `Warmth (main)` = sprintf("%.4f (%.4f)", b_w, se_w),
+    `Interaction (est)` = sprintf("%.4f", b_i),
+    `Interaction (SE)`  = sprintf("%.4f", se_i),
+    `Interaction (p)`   = fmt_p(p_i),
+    `Interaction 95% CI` = sprintf("[%.4f, %.4f]",
+                                   b_i - 1.96 * se_i, b_i + 1.96 * se_i)
+  )
+}
+
+wave_within_table <- bind_rows(
+  extract_wave_row(a24,   "2024"),
+  extract_wave_row(a25,   "2025"),
+  extract_wave_row(apool, "Pooled")
+)
+
+log_msg("    Within-wave interaction summary:")
+for (i in seq_len(nrow(wave_within_table))) {
+  log_msg(sprintf("      %s: N=%s, intxn=%s, SE=%s, p=%s",
+                  wave_within_table$Wave[i],
+                  as.character(wave_within_table$N[i]),
+                  wave_within_table$`Interaction (est)`[i],
+                  wave_within_table$`Interaction (SE)`[i],
+                  wave_within_table$`Interaction (p)`[i]))
+}
+
+save_table(wave_within_table, "app_tab_wave_within")
+
+
 # === Section 5: Core Tables ==================================================
 
 log_only("")
@@ -680,22 +816,18 @@ panel_b_models <- list(a24_alt, a25_alt, apool_alt, b24_alt, b25_alt, bpool_alt)
 panel_b_names  <- c("A:2024", "A:2025", "A:Pool", "B:2024", "B:2025", "B:Pool")
 
 # Write Panel A LaTeX
-tex_path_a <- here("output", "tables", "tab2_phase3_panel_a.tex")
+tex_path_a <- here("prism", "tables", "tab2_phase3_panel_a.tex")
 texreg(panel_a_models,
        custom.model.names = panel_a_names,
-       caption = "Panel A: blame\\_china (Multi-Select, $\\sim$49\\%)",
-       label = "tab:phase3_panel_a",
-       float.pos = "htbp",
+       table = FALSE,
        use.packages = FALSE,
        file = tex_path_a)
 
 # Write Panel B LaTeX
-tex_path_b <- here("output", "tables", "tab2_phase3_panel_b.tex")
+tex_path_b <- here("prism", "tables", "tab2_phase3_panel_b.tex")
 texreg(panel_b_models,
        custom.model.names = panel_b_names,
-       caption = "Panel B: blame\\_china\\_alt (Most Responsible, $\\sim$11\\%)",
-       label = "tab:phase3_panel_b",
-       float.pos = "htbp",
+       table = FALSE,
        use.packages = FALSE,
        file = tex_path_b)
 
@@ -703,7 +835,7 @@ texreg(panel_b_models,
 panel_a_tex <- readLines(tex_path_a)
 panel_b_tex <- readLines(tex_path_b)
 writeLines(c(panel_a_tex, "", "% --- Panel B ---", "", panel_b_tex),
-           here("output", "tables", "tab2_phase3_main_models.tex"))
+           here("prism", "tables", "tab2_phase3_main_models.tex"))
 file.remove(tex_path_a, tex_path_b)
 log_only("  Saved: tab2_phase3_main_models.tex (two panels)")
 
@@ -733,24 +865,22 @@ for (mn in names(all_models)) {
   csv_rows[[mn]] <- tidy_df
 }
 csv_out <- bind_rows(csv_rows)
-write_csv(csv_out, here("output", "tables", "tab2_phase3_main_models.csv"))
+write_csv(csv_out, here("prism", "tables", "tab2_phase3_main_models.csv"))
 log_only("  Saved: tab2_phase3_main_models.csv (all 14 OLS models)")
 
 # --- Appendix: R1 replacement models ---
 texreg(list(r1pool, r1pool_alt),
        custom.model.names = c("R1: blame_china", "R1: blame_china_alt"),
-       caption = "Replacement Robustness: Behavior Index $\\times$ Blame (Pooled)",
-       label = "tab:phase3_r1",
-       float.pos = "htbp",
+       table = FALSE,
        use.packages = FALSE,
-       file = here("output", "tables", "app_tab_phase3_r1_models.tex"))
+       file = here("prism", "tables", "app_tab_phase3_r1_models.tex"))
 log_only("  Saved: app_tab_phase3_r1_models.tex")
 
 r1_csv <- bind_rows(
   broom::tidy(r1pool, conf.int = TRUE) %>% mutate(model = "r1pool"),
   broom::tidy(r1pool_alt, conf.int = TRUE) %>% mutate(model = "r1pool_alt")
 )
-write_csv(r1_csv, here("output", "tables", "app_tab_phase3_r1_models.csv"))
+write_csv(r1_csv, here("prism", "tables", "app_tab_phase3_r1_models.csv"))
 log_only("  Saved: app_tab_phase3_r1_models.csv")
 
 # --- Coefficient forest plot (DA#11) ---
@@ -805,8 +935,8 @@ p_forest <- ggplot(forest_data, aes(x = estimate, y = label,
                   position = position_dodge(width = 0.3), size = 0.5) +
   facet_wrap(~panel_label, scales = "free_x") +
   scale_color_manual(values = spec_colors, name = "Specification") +
-  labs(title = "Interaction Coefficient: warmth_z \u00d7 blame",
-       subtitle = "Point estimates with 95% CI across all Table 2 models",
+  labs(title = NULL,
+       subtitle = NULL,
        x = "Coefficient estimate",
        y = NULL) +
   theme_pax()
@@ -903,8 +1033,8 @@ make_interaction_plot <- function(m24, m25, d24, d25, blame_var, filename) {
                                            paste0(blame_var, " = 1"))),
                       name = NULL) +
     labs(
-      title = paste0("Predicted Posture by Warmth \u00d7 ", blame_var),
-      subtitle = "Survey-weighted OLS; controls at medians/modes; 95% CI",
+      title = NULL,
+      subtitle = NULL,
       x = "Warmth toward China (z-score)",
       y = "Predicted Posture Index (z-score)\n<< Hawkish | Dovish >>"
     ) +
@@ -1011,8 +1141,7 @@ olr_display <- olr_summary %>%
          `Blame (b/SE/p)` = blame,
          `Interaction (b/SE/p)` = intxn)
 
-save_table(olr_display, "app_tab_phase3_svyolr_q15items",
-           caption = "Ordered Logit Robustness: Individual Posture Items")
+save_table(olr_display, "app_tab_phase3_svyolr_q15items")
 
 log_only("  Ordered logit summary:")
 for (i in seq_len(nrow(olr_summary))) {
@@ -1205,8 +1334,8 @@ p_sanity <- ggplot() +
                                  "blame_china = 1" = pax_highlight),
                      name = NULL) +
   scale_size_continuous(range = c(1, 5), guide = "none") +
-  labs(title = "Sanity Check: Weighted Binned Means vs. Model Predictions",
-       subtitle = "Points = weighted binned sample means; dashed lines = OLS predictions",
+  labs(title = NULL,
+       subtitle = NULL,
        x = "Warmth toward China (z-score bins)",
        y = "Mean Posture (z-score)") +
   theme_pax()
@@ -1244,23 +1373,23 @@ phase3_objects <- list(
   posture_moments  = c(mu = posture_mu, sd = posture_sd),
   behavior_moments = c(mu = behavior_mu, sd = behavior_sd)
 )
-saveRDS(phase3_objects, here("output", "tables", "phase3_objects.rds"))
+saveRDS(phase3_objects, here("prism", "tables", "phase3_objects.rds"))
 log_only("  Saved phase3_objects.rds")
 
 # File manifest
 output_files <- c(
-  "output/tables/tab2_phase3_main_models.tex",
-  "output/tables/tab2_phase3_main_models.csv",
-  "output/tables/app_tab_phase3_r1_models.tex",
-  "output/tables/app_tab_phase3_r1_models.csv",
-  "output/tables/app_tab_phase3_svyolr_q15items.tex",
-  "output/tables/app_tab_phase3_svyolr_q15items.csv",
-  "output/figures/fig2a_posture_warmthXblame_byyear.pdf",
-  "output/figures/fig2a_posture_warmthXblameALT_byyear.pdf",
-  "output/figures/fig_coef_forest_interaction.pdf",
-  "output/figures/fig_sanity_binned_means.pdf",
-  "output/tables/phase3_objects.rds",
-  "output/tables/phase3_log.txt"
+  "prism/tables/tab2_phase3_main_models.tex",
+  "prism/tables/tab2_phase3_main_models.csv",
+  "prism/tables/app_tab_phase3_r1_models.tex",
+  "prism/tables/app_tab_phase3_r1_models.csv",
+  "prism/tables/app_tab_phase3_svyolr_q15items.tex",
+  "prism/tables/app_tab_phase3_svyolr_q15items.csv",
+  "prism/figures/fig2a_posture_warmthXblame_byyear.pdf",
+  "prism/figures/fig2a_posture_warmthXblameALT_byyear.pdf",
+  "prism/figures/fig_coef_forest_interaction.pdf",
+  "prism/figures/fig_sanity_binned_means.pdf",
+  "prism/tables/phase3_objects.rds",
+  "prism/tables/phase3_log.txt"
 )
 
 log_only("  File manifest:")
@@ -1282,6 +1411,268 @@ log_only("PHASE 3 COMPLETE (v3.2)")
 log_only("========================================================================")
 message("Phase 3 COMPLETE (v3.2)")
 
-writeLines(log_env$entries, here("output", "tables", "phase3_log.txt"))
+writeLines(log_env$entries, here("prism", "tables", "phase3_log.txt"))
 message(sprintf("Phase 3 log saved to: %s",
-                here("output", "tables", "phase3_log.txt")))
+                here("prism", "tables", "phase3_log.txt")))
+
+
+# ============================================================
+# NA-4: Multiple Imputation for Step 1 OLS
+# ============================================================
+# Purpose: Assess whether listwise deletion of missing values (primarily
+# driven by ideo5_clean missingness) materially affects the main warmth
+# x blame interaction coefficient. Multiple imputation (MI) with m=10
+# imputations and pooled inference via Rubin's rules allows all
+# respondents with partial data to contribute to estimation.
+#
+# Note: Survey-weighted MI is not directly supported by mice + svyglm.
+# We approximate by using frequency-weighted lm() on each imputed
+# dataset and pool with mice::pool(). This is a conservative check for
+# directional stability; the design-based SEs from svyglm are the
+# authoritative inference tool.
+#
+# Primary comparison: warmth_z:blame_china interaction coefficient
+#   - Complete-case (apool): reference
+#   - MI pooled: m=10, pmm for continuous, logreg for binary
+# ============================================================
+
+log_only("")
+log_msg("=== NA-4: Multiple Imputation Robustness (Step 1 OLS) ===")
+
+# --- Variables for the main apool specification ---
+# ctrl_rhs in 03_models.R = "party3 + ideo5_clean + educ_college + age + female +
+#                            race_eth + newsint_attn + exposure_index"
+# Main model: posture_z ~ warmth_z * blame_china + factor(year) + [ctrl_rhs]
+mi_vars <- c("posture_z", "warmth_z", "blame_china", "ideo5_clean",
+             "party3", "educ_college", "age", "female", "race_eth",
+             "newsint_attn", "exposure_index", "year", "weight")
+
+# Keep only variables that exist in pooled
+mi_vars_avail <- intersect(mi_vars, names(pooled))
+mi_vars_missing <- setdiff(mi_vars, mi_vars_avail)
+if (length(mi_vars_missing) > 0) {
+  log_only(sprintf("  WARNING: MI variables not found in pooled: %s",
+                   paste(mi_vars_missing, collapse = ", ")))
+}
+
+pooled_mi <- pooled[, mi_vars_avail, drop = FALSE]
+
+# Document missingness pattern
+log_msg("  Missingness summary (pooled, MI variables):")
+for (v in mi_vars_avail) {
+  n_miss <- sum(is.na(pooled_mi[[v]]))
+  pct_miss <- 100 * n_miss / nrow(pooled_mi)
+  if (n_miss > 0) {
+    log_msg(sprintf("    %s: %d missing (%.1f%%)", v, n_miss, pct_miss))
+  } else {
+    log_only(sprintf("    %s: no missing values", v))
+  }
+}
+
+n_complete_mi <- sum(complete.cases(pooled_mi[, setdiff(mi_vars_avail, "weight")]))
+log_msg(sprintf("  Complete cases (excl. weight): %d / %d (%.1f%%)",
+                n_complete_mi, nrow(pooled_mi),
+                100 * n_complete_mi / nrow(pooled_mi)))
+
+# --- Reference: complete-case estimate (from apool) ---
+na4_cc_est <- NA_real_
+na4_cc_se  <- NA_real_
+na4_cc_p   <- NA_real_
+na4_cc_n   <- NA_integer_
+
+if (!is.null(apool)) {
+  cc_coefs <- coef(summary(apool))
+  if ("warmth_z:blame_china" %in% rownames(cc_coefs)) {
+    na4_cc_est <- cc_coefs["warmth_z:blame_china", "Estimate"]
+    na4_cc_se  <- cc_coefs["warmth_z:blame_china", "Std. Error"]
+    na4_cc_p   <- cc_coefs["warmth_z:blame_china", "Pr(>|t|)"]
+    na4_cc_n   <- nobs(apool)
+    log_msg(sprintf("  Complete-case (apool): b=%.4f, SE=%.4f, p=%s, N=%d",
+                    na4_cc_est, na4_cc_se, fmt_p(na4_cc_p), na4_cc_n))
+  } else {
+    log_only("  WARNING: warmth_z:blame_china not found in apool coefficients")
+  }
+}
+
+# --- Run mice imputation ---
+# Method: pmm for continuous, logreg for binary, polyreg for multi-category
+# Detect variable types automatically
+mi_method <- character(ncol(pooled_mi))
+names(mi_method) <- names(pooled_mi)
+
+for (v in names(mi_method)) {
+  vals <- pooled_mi[[v]]
+  if (is.factor(vals)) {
+    n_levels <- nlevels(vals)
+    mi_method[v] <- if (n_levels == 2) "logreg" else "polyreg"
+  } else if (is.integer(vals) || is.numeric(vals)) {
+    unique_vals <- unique(na.omit(vals))
+    if (length(unique_vals) == 2 && all(unique_vals %in% c(0, 1))) {
+      mi_method[v] <- "logreg"
+    } else {
+      mi_method[v] <- "pmm"
+    }
+  } else {
+    mi_method[v] <- ""  # don't impute (character, etc.)
+  }
+}
+
+# Don't impute: year (no missingness expected), weight (auxiliary only)
+mi_method["year"]   <- ""
+mi_method["weight"] <- ""
+
+log_msg(sprintf("  Imputation methods:"))
+for (v in names(mi_method)) {
+  if (mi_method[v] != "") {
+    log_only(sprintf("    %s: %s", v, mi_method[v]))
+  }
+}
+
+# Run imputation
+log_msg(sprintf("  Running mice() with m=10, seed=2024..."))
+
+mi_out <- tryCatch(
+  mice(
+    pooled_mi,
+    m       = 10,
+    method  = mi_method,
+    seed    = 2024,
+    printFlag = FALSE
+  ),
+  error = function(e) {
+    log_msg(sprintf("  mice() FAILED: %s", e$message))
+    NULL
+  }
+)
+
+# --- Fit weighted lm on each imputed dataset and pool ---
+na4_mi_est  <- NA_real_
+na4_mi_se   <- NA_real_
+na4_mi_p    <- NA_real_
+na4_mi_fmi  <- NA_real_   # fraction of missing information
+na4_mi_n    <- NA_integer_
+
+if (!is.null(mi_out)) {
+  log_msg("  mice() complete. Fitting weighted lm on each imputed dataset...")
+
+  # Formula for the main interaction model
+  # Note: factor(year) requires year to be numeric; handle both cases
+  mi_fmla <- as.formula(
+    "posture_z ~ warmth_z * blame_china + factor(year) + party3 + ideo5_clean + educ_college + age + female + race_eth + newsint_attn + exposure_index"
+  )
+
+  # Fit lm with frequency weights on each imputed dataset
+  # mice::with() applies a model to each completed dataset
+  mi_fits <- tryCatch(
+    with(mi_out,
+         lm(posture_z ~ warmth_z * blame_china + factor(year) + party3 +
+              ideo5_clean + educ_college + age + female + race_eth +
+              newsint_attn + exposure_index,
+            weights = weight)),
+    error = function(e) {
+      log_msg(sprintf("  with(mi_out, lm()) FAILED: %s", e$message))
+      NULL
+    }
+  )
+
+  if (!is.null(mi_fits)) {
+    mi_pool <- tryCatch(pool(mi_fits), error = function(e) {
+      log_msg(sprintf("  pool() FAILED: %s", e$message))
+      NULL
+    })
+
+    if (!is.null(mi_pool)) {
+      mi_summary <- summary(mi_pool, conf.int = TRUE)
+      log_msg("  MI pooled results for warmth_z:blame_china:")
+
+      intxn_row <- mi_summary[mi_summary$term == "warmth_z:blame_china", ]
+      if (nrow(intxn_row) > 0) {
+        na4_mi_est <- intxn_row$estimate
+        na4_mi_se  <- intxn_row$std.error
+        # Use t-distribution p-value from mice summary
+        na4_mi_p   <- intxn_row$p.value
+
+        # Fraction of missing information
+        pool_obj   <- mi_pool$pooled
+        fmi_row    <- pool_obj[pool_obj$term == "warmth_z:blame_china", ]
+        na4_mi_fmi <- if (nrow(fmi_row) > 0 && "fmi" %in% names(fmi_row)) {
+          fmi_row$fmi
+        } else NA_real_
+
+        na4_mi_n   <- nrow(complete(mi_out, 1))  # N per imputed dataset
+
+        log_msg(sprintf("    MI pooled: b=%.4f, SE=%.4f, p=%s",
+                        na4_mi_est, na4_mi_se, fmt_p(na4_mi_p)))
+        log_msg(sprintf("    FMI (fraction missing info): %.4f",
+                        ifelse(is.na(na4_mi_fmi), NA, na4_mi_fmi)))
+        log_msg(sprintf("    N per imputed dataset: %d", na4_mi_n))
+
+        # Flag if MI attenuates the interaction by >20%
+        if (!is.na(na4_cc_est) && abs(na4_cc_est) > 0.001) {
+          pct_change_mi <- 100 * (na4_mi_est - na4_cc_est) / abs(na4_cc_est)
+          log_msg(sprintf("    Pct change vs complete-case: %.1f%%", pct_change_mi))
+          if (abs(pct_change_mi) > 20) {
+            log_msg(sprintf("    FLAG: MI changes the interaction by >20%% (%.1f%%) — listwise deletion may be non-ignorable", pct_change_mi))
+          } else {
+            log_msg("    No material attenuation: MI change <= 20% — MAR assumption appears reasonable")
+          }
+        }
+      } else {
+        log_msg("  WARNING: warmth_z:blame_china not found in MI pooled summary")
+      }
+    }
+  }
+} else {
+  log_msg("  NA-4: Skipping MI pooled inference (mice() failed)")
+}
+
+# --- Save comparison table ---
+na4_display <- tibble(
+  Specification = c(
+    "Complete-case (apool, svyglm)",
+    "Multiple imputation (m=10, weighted lm)"
+  ),
+  `Warmth x Blame` = c(
+    ifelse(is.na(na4_cc_est), "—", sprintf("%.4f", na4_cc_est)),
+    ifelse(is.na(na4_mi_est), "—", sprintf("%.4f", na4_mi_est))
+  ),
+  SE = c(
+    ifelse(is.na(na4_cc_se), "—", sprintf("%.4f", na4_cc_se)),
+    ifelse(is.na(na4_mi_se), "—", sprintf("%.4f", na4_mi_se))
+  ),
+  `p-value` = c(
+    ifelse(is.na(na4_cc_p), "—", fmt_p(na4_cc_p)),
+    ifelse(is.na(na4_mi_p), "—", fmt_p(na4_mi_p))
+  ),
+  N = c(
+    ifelse(is.na(na4_cc_n), "—", as.character(na4_cc_n)),
+    ifelse(is.na(na4_mi_n), "—", as.character(na4_mi_n))
+  ),
+  Note = c(
+    "Design-based SE (svyglm); authoritative specification",
+    sprintf("FMI=%.3f; frequency-weighted lm approximation; m=10",
+            ifelse(is.na(na4_mi_fmi), NA, na4_mi_fmi))
+  )
+)
+
+na4_tex_path <- here("prism", "tables", "app_tab_mi_robustness.tex")
+tex_na4 <- na4_display %>%
+  kbl(format = "latex", booktabs = TRUE, caption = NULL, linesep = "")
+writeLines(as.character(tex_na4), na4_tex_path)
+log_msg("  Saved: app_tab_mi_robustness.tex")
+
+write_csv(na4_display, here("prism", "tables", "app_tab_mi_robustness.csv"))
+log_msg("  Saved: app_tab_mi_robustness.csv")
+
+# Update phase3_objects and re-save
+phase3_objects$na4_mi_result <- list(
+  cc_est = na4_cc_est, cc_se = na4_cc_se, cc_p = na4_cc_p, cc_n = na4_cc_n,
+  mi_est = na4_mi_est, mi_se = na4_mi_se, mi_p = na4_mi_p,
+  mi_fmi = na4_mi_fmi, mi_n = na4_mi_n,
+  mi_out = mi_out
+)
+saveRDS(phase3_objects, here("prism", "tables", "phase3_objects.rds"))
+log_msg("  phase3_objects.rds updated with NA-4 MI result")
+
+log_msg("NA-4 complete")
+log_msg("========================================================================")

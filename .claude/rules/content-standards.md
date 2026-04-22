@@ -302,3 +302,84 @@ explorations/
 ### When to Stop (Kill Switch)
 
 At any point: stop, archive with note ("Attempted X, hit blocker Y"), move on. No guilt — exploration is inherently uncertain.
+
+---
+
+## 5. Survey Research — Table Conventions
+
+### Descriptive Opinion Tables
+
+Standard format for reporting survey results:
+
+```latex
+\begin{tabular}{lcccc}
+\toprule
+                    & \% Agree & \% Disagree & MoE & $n$ \\
+\midrule
+Overall             & 62.3     & 37.7        & ±3.1 & 1,024 \\
+\midrule
+\multicolumn{5}{l}{\textit{By party identification}} \\
+Democrat            & 74.1     & 25.9        & ±4.8 & 412   \\
+Republican          & 48.2     & 51.8        & ±5.1 & 389   \\
+Independent         & 63.7     & 36.3        & ±6.2 & 223   \\
+\bottomrule
+\end{tabular}
+```
+
+Rules:
+- Report **weighted percentages** and **unweighted sample sizes** ($n$)
+- Include **margin of error** (MoE) at 95% confidence for each estimate
+- Flag subgroup cells with $n < 100$ in table notes
+- Use `\midrule` to separate demographic categories
+- Panel labels for subgroups in `\textit{}`
+
+### Regression Tables for Survey Data
+
+- Report weighted and unweighted estimates if they differ substantively
+- Note survey design (weights, strata, clusters) in table notes
+- Standard errors from `survey::svyglm()` or equivalent design-based estimator
+- Label: "Design-based standard errors in parentheses" (not just "robust")
+
+### Preferred R Packages for Survey Tables
+
+```r
+library(survey)     # Design-based inference
+library(srvyr)      # Tidyverse-friendly survey analysis
+library(modelsummary)  # Table export (same as Section 1)
+```
+
+---
+
+## 6. Survey Research — Figure Conventions
+
+### Dot Plots with Confidence Intervals (preferred for opinion items)
+
+```r
+ggplot(data, aes(x = estimate, y = reorder(item, estimate))) +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(xmin = ci_lower, xmax = ci_upper), height = 0.2) +
+  scale_x_continuous(labels = scales::percent_format(), limits = c(0, 1)) +
+  labs(x = NULL, y = NULL, title = NULL) +
+  theme_minimal(base_family = "serif") +
+  theme(panel.grid.major.y = element_blank())
+```
+
+### Stacked/Grouped Bar Charts (for Likert distributions)
+
+- Use diverging stacked bars centered on neutral category
+- Color palette: sequential or diverging (not rainbow)
+- Always include percentage labels on bars if space permits
+- Order categories logically (Strongly Agree → Strongly Disagree), not alphabetically
+
+### Partisan/Demographic Comparison Plots
+
+- Use facets or color to distinguish groups (party, age, education)
+- Party colors: blue for Democrats, red for Republicans, gray/purple for Independents
+- Always include 95% confidence intervals
+- Serif font, no embedded titles (per figures.md)
+
+### Cross-Wave Comparison (2024 vs. 2025)
+
+- Connected dot plots or slope graphs for attitude change
+- Clearly label each wave
+- Note if question wording changed between waves

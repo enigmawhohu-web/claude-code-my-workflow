@@ -29,6 +29,7 @@
 
 % --- Tables ---
 \usepackage{booktabs}
+\usepackage{threeparttable}
 \usepackage{tabularx}
 \usepackage{longtable}
 \usepackage{multirow}
@@ -79,9 +80,8 @@
 \AtBeginEnvironment{longtable}{\singlespacing}
 
 % --- Reduce noisy line-breaking diagnostics ---
-\hbadness=10000
-\hfuzz=200pt
+\hbadness=1000
+\hfuzz=2pt
 
-
-\vbadness=10000
-\vfuzz=500pt
+\vbadness=1000
+\vfuzz=2pt
