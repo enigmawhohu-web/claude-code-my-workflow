@@ -409,11 +409,21 @@ Table~\ref{tab:phase3_r1} reports replacement robustness models substituting the
 \begin{table}[htbp]
 \centering
 \small
-\caption{Design-Based Sensitivity Check: MNL S+A Blame Contrasts}
+\caption{Design-Based Sensitivity Check: MNL S+A Coefficients (Log-Odds Scale)}
 \label{tab:app_design_mnl}
 \input{tables/app_tab_design_mnl}
 \par\vspace{0.5ex}
-{\footnotesize\textit{Notes.} Design-based standard errors computed via \texttt{svyglm()} binary contrasts (S+A vs.\ all other categories). The binary-contrast approach approximates the design-based equivalent of the full MNL. Point estimates are consistent with the main multinomial specification.}
+{\footnotesize\textit{Notes.} Design-based standard errors computed via \texttt{svyglm()} binary contrasts (S+A vs.\ all other categories) on the log-odds scale. The binary-contrast approach approximates the design-based equivalent of the full MNL. Point estimates are consistent with the main multinomial specification. The blame main effect on S+A is robust ($b = 2.640$, $p < 0.001$); the warmth $\times$ blame interaction is not statistically distinguishable from zero under design-based inference ($b = 0.134$, $p = 0.240$).}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Design-Based vs.\ Model-Based Standard Errors on the Probability Scale: Blame Contrast $\Delta_{\text{pp}}$(S+A)}
+\label{tab:app_design_mnl_prob}
+\input{tables/app_tab_design_mnl_prob}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Design-based SEs computed from \texttt{svyglm()} binary contrasts (S+A vs.\ other) and converted to the probability scale via the standard delta method. MNL Hessian SEs are computed from the full multinomial model's variance--covariance matrix (also delta-method propagated). The Hessian SEs are an order of magnitude larger than the design-based SEs at every warmth level, reflecting that the full-MNL Hessian variance for predicted probabilities incorporates correlation across alternatives that magnifies uncertainty for $\hat{P}(\text{S+A})$. The design-based SEs from the binary-contrast specification are the recommended quantities for inference about $\Delta_{\text{pp}}(\text{S+A})$. Point estimates of $\Delta_{\text{pp}}$ differ slightly from those in Table~\ref{tab:phase4_estimands} because the binary contrast is fit on $\mathbf{1}\{\text{tool} = \text{S+A}\}$ rather than on the full four-category outcome. SE Ratio = svyglm Design SE / MNL Hessian SE.}
 \end{table}
 
 \begin{figure}[htbp]
@@ -630,9 +640,9 @@ Appendix Table~\ref{tab:app_mi_phase4} reports pooled MI estimates for the multi
 \small
 \caption{Multiple Imputation Robustness: Eight-Probe Specificity Contrasts}
 \label{tab:app_mi_phase5}
-\input{tables/app_tab_mi_phase5}
+\input{tables/app_tab_mi_phase5_v2}
 \par\vspace{0.5ex}
-{\footnotesize\textit{Notes.} Pooled MI estimates ($m = 10$ imputations, PMM) for the stacked-OLS probe contrasts. The target probe contrast ($\Delta_d$) and composite boundary mean are stable under full-sample imputation.}
+{\footnotesize\textit{Notes.} Pooled MI estimates ($m = 10$ imputations, PMM) for the stacked-OLS probe contrasts using Approach B (impute predictors only; recompute the binary $\mathbf{1}\{\text{tool} = \text{S+A}\}$ outcome from the multinomial-logit predicted probabilities within each imputation). This approach was adopted after the original MI implementation produced no estimates for individual probe contrasts because the imputed binary outcome was a constant (all 0 or all 1) within several imputations, causing \texttt{lm()} to drop the predictor. Approach B avoids this degeneracy and yields populated estimates for all eight probes. The target probe ($d$, fentanyl cooperation) shows the largest contrast under both complete-case and MI specifications. FMI = fraction of missing information.}
 \end{table}
 
 \begin{table}[htbp]
@@ -640,13 +650,9 @@ Appendix Table~\ref{tab:app_mi_phase4} reports pooled MI estimates for the multi
 \small
 \caption{Multiple Imputation Diagnostics: Variance Components and FMI}
 \label{tab:app_mi_diagnostics}
-\input{tables/app_tab_mi_diagnostics}
+\input{tables/app_tab_mi_diagnostics_v2}
 \par\vspace{0.5ex}
-{\footnotesize\textit{Notes.} Rubin's rules variance decomposition. $V_W$ = within-imputation variance; $V_B$ = between-imputation variance; FMI = fraction of missing information. Low FMI ($\approx 0.001$) confirms that missingness contributes negligible uncertainty to the pooled estimates.}
+{\footnotesize\textit{Notes.} Rubin's rules variance decomposition. $V_W$ = within-imputation variance; $V_B$ = between-imputation variance; FMI = fraction of missing information. Reported degrees of freedom apply the Barnard--Rubin small-sample correction with the cap at the complete-data df ($n - k$): 4{,}214 for Phase 3, 4{,}154 for Phase 4, 2{,}056 for Phase 5. The cap prevents the textbook Barnard--Rubin formula from returning implausibly large df (in the millions) when between-imputation variance $V_B$ is near zero, which occurs here because the missingness pattern is concentrated in a single covariate (ideology) and the predictive-mean-matching imputer recovers nearly identical parameter estimates across imputations. Low FMI ($\approx 0.001$) confirms that missingness contributes negligible uncertainty to the pooled estimates.}
 \end{table}
-
-% TODO: Measurement Appendix (M-2) — add verbatim question wording, response options, and
-% variable construction details for all key measures (warmth, blame, posture, tool config,
-% 8-probe battery). Requires codebook PDFs; out of scope for current revision pass.
 
 \end{document}

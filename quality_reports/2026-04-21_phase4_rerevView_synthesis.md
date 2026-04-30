@@ -69,7 +69,7 @@ The paper has made genuine progress. The domain referee is ready to accept with 
 5. **Within-wave/triple inconsistency** — reconcile 0.096 vs 0.104 (2024 coefficient across tables); confirm same sample and covariates → log-only (no new table) ✅
 
 ### Phase 5b: CLARIFICATION + MINOR (writer)
-1. **M-2** — Measurement Appendix with verbatim wording (warmth, blame battery, posture items, tool checklist, 8 probes) — read codebook PDFs
+1. ~~**M-2** — Measurement Appendix~~ **SKIPPED 2026-04-22** — verbatim question-wording appendix de-scoped per user direction. Question wording is already documented in the YouGov instruments (referenced in §3.1) and partially excerpted in main text where definitionally needed. Domain-referee weight on this item is modest; deferred to potential R&R round if a referee specifically demands it.
 2. **IIA text fix (revised, no nested logit)** — correct the "confirms distinctiveness" misinterpretation. Replace with: rejection of IIA implies a non-proportional substitution structure (i.e., dropping one option would shift probability mass unevenly across the others) rather than independence per se; main MNL estimates therefore remain informative as conditional associations within the four-alternative menu, but should not be extrapolated to settings where the option set changes. No nested-logit alternative is presented — the conceptual clarification is the fix.
 3. **D-1** — Note design-based interaction p=0.240 in main text §4.2 or footnote
 4. **D-2** — Add placebo p-value in main text §5 ¶2 ✅ (already present: "p = 0.758" in line 323; verified 2026-04-22)
