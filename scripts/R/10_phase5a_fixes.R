@@ -2,7 +2,6 @@
 #' 10_phase5a_fixes.R — Phase 5a targeted methodological fixes
 #'
 #' Tasks:
-#'   C-2a: Nested logit with nesting structure from Hausman-McFadden IIA results
 #'   C-3:  MI Phase 5 fix — resolve NA estimates for individual probe contrasts
 #'   M-2:  Design-based SEs on probability scale (blame contrast Δ_pp(S+A))
 #'   M-3:  MI diagnostics df cap at complete-data df
@@ -14,13 +13,12 @@
 #'         prism/tables/app_tab_within_wave.csv (for M-5 reference)
 #'         prism/tables/app_tab_triple_interaction.csv (for M-5 reference)
 #'
-#' @output prism/tables/app_tab_nested_logit.tex       (C-2a)
-#'         prism/tables/app_tab_mi_phase5_v2.tex        (C-3)
+#' @output prism/tables/app_tab_mi_phase5_v2.tex        (C-3)
 #'         prism/tables/app_tab_mi_diagnostics_v2.tex   (M-3 + C-3 update)
 #'         prism/tables/app_tab_design_mnl_prob.tex     (M-2)
 #'         Output/10_phase5a_log.txt                    (all tasks)
 #'
-#' @depends here, tidyverse, survey, nnet, mice, mlogit, margins
+#' @depends here, tidyverse, survey, nnet, mice, margins
 #' ============================================================================
 
 suppressPackageStartupMessages({
@@ -29,7 +27,6 @@ suppressPackageStartupMessages({
   library(survey)
   library(nnet)
   library(mice)
-  library(mlogit)
   library(margins)
 })
 
@@ -215,136 +212,25 @@ log_msg(sprintf("  Main MNL: %s",
 svy_design <- svydesign(id = ~1, weights = ~weight, data = pooled_complete)
 
 # ---------------------------------------------------------------------------
-# TASK 1 (C-2a): Nested logit
-# Nest 1: {Neither, S+A}   — these two rejected Hausman-McFadden IIA
-# Nest 2: {Sanctions-only, Action-only} — these two did not reject IIA
+# Main MNL blame contrasts Δ_pp(S+A) at warmth = -1, 0, +1 SD
+#
+# Used downstream by Task 3 (M-2) for design-based SE comparison and by the
+# summary block. The C-2a nested-logit alternative was REMOVED 2026-04-22:
+# political-science / area-studies audiences (POQ, JCC, ISQ) treat IIA via
+# textual interpretation rather than nested-logit replacements. The IIA
+# rejection is addressed in the manuscript's interpretation of MNL results
+# (see Phase 5b item 2), not via an alternative discrete-choice model.
 # ---------------------------------------------------------------------------
 
 log_msg("")
 log_msg("=====================================================================")
-log_msg("  TASK 1 (C-2a): Nested Logit")
-log_msg("  Nest 1 = {Neither, S+A}  Nest 2 = {Sanctions-only, Action-only}")
+log_msg("  Computing main MNL blame contrasts Δ_pp(S+A)")
 log_msg("=====================================================================")
 
-# mlogit requires data in long format via dfidx
-# Predictors: same as main MNL (incl. posture_z, factor(year), all controls)
-
-nested_fit      <- NULL
-nested_conv     <- FALSE
-nested_loglik   <- NA_real_
-nested_aic      <- NA_real_
-nested_iv       <- c(NA_real_, NA_real_)  # inclusive-value parameters (nest1, nest2)
-nested_iv_valid <- NA                     # TRUE if both iv ∈ [0,1]
-nl_contrasts    <- NULL   # will hold blame contrast comparison table
-
-# Build a version of the data with the required format for mlogit
-# mlogit needs a unique ID column, and alternative names must be valid R
-# identifiers (no `+`/`-`/spaces — mlogit/dfidx splits names on those).
 pooled_complete$obs_id <- seq_len(nrow(pooled_complete))
-pooled_mlogit <- pooled_complete
-levels(pooled_mlogit$tool_config) <- c("Neither", "Sonly", "Aonly", "SA")
-
-ml_data <- tryCatch({
-  # mlogit.data (legacy API) plays better with mlogit 1.1.3 than dfidx() in
-  # wide format — dfidx triggers a "length of 'dimnames' [1]" error in
-  # Formula parsing even for intercept-only models.
-  mlogit::mlogit.data(
-    as.data.frame(pooled_mlogit),
-    choice = "tool_config",
-    shape  = "wide"
-  )
-}, error = function(e) {
-  log_msg(sprintf("  mlogit.data() failed: %s", e$message))
-  NULL
-})
-
-# Nest memberships using the renamed levels.
-nests_def <- list(
-  nest1 = c("Neither", "SA"),
-  nest2 = c("Sonly", "Aonly")
-)
-
-if (!is.null(ml_data)) {
-  # Predictor formula for mlogit (alternative-invariant predictors)
-  # In mlogit: individual-specific covariates enter with | 0 (alternative-specific intercepts only)
-  fmla_nest_rhs <- paste(
-    "warmth_z + blame_china + warmth_z:blame_china + posture_z +",
-    "party3 + ideo5_clean + educ_college + age + female + race_eth +",
-    "newsint_attn + exposure_index + factor(year)"
-  )
-  fmla_nest <- as.formula(paste0("tool_config ~ 0 | ", fmla_nest_rhs))
-
-  # Nested logit fit UNWEIGHTED as an IIA sensitivity check (weighted mlogit
-  # has length-mismatch issues with dfidx-expanded data; survey weights are
-  # used in the main MNL reported in the body). Documented in table note.
-  log_msg("  Fitting nested logit via mlogit::mlogit() (unweighted IIA sensitivity) ...")
-  nested_fit <- tryCatch(
-    mlogit(
-      fmla_nest,
-      data   = ml_data,
-      nests  = nests_def,
-      method = "bhhh",
-      iterlim = 500,
-      tol = 1e-6
-    ),
-    error = function(e) {
-      log_msg(sprintf("  mlogit() FAILED (bhhh): %s", e$message))
-      # Try alternative optimizer
-      tryCatch(
-        mlogit(
-          fmla_nest,
-          data   = ml_data,
-          nests  = nests_def,
-          method = "nr",
-          iterlim = 500
-        ),
-        error = function(e2) {
-          log_msg(sprintf("  mlogit() FAILED (nr): %s", e2$message))
-          NULL
-        }
-      )
-    }
-  )
-} else {
-  log_msg("  Skipping mlogit: dfidx() failed")
-}
-
-if (!is.null(nested_fit)) {
-  # mlogit stores convergence info in $est.stat$message; a successful fit has
-  # no convergence code in $convergence (often NULL). Treat fit existence +
-  # finite logLik as convergence signal.
-  raw_conv <- nested_fit$convergence
-  nested_loglik <- as.numeric(logLik(nested_fit))
-  nested_aic    <- AIC(nested_fit)
-  nested_conv   <- is.finite(nested_loglik) &&
-                    (is.null(raw_conv) || isTRUE(raw_conv == 0) || isTRUE(raw_conv))
-  log_msg(sprintf("  Nested logit: convergence=%s, logLik=%.2f, AIC=%.2f",
-                  nested_conv, nested_loglik, nested_aic))
-  coef_nl_all <- tryCatch(coef(nested_fit), error = function(e) NULL)
-  if (!is.null(coef_nl_all)) {
-    iv_names <- grep("^iv:", names(coef_nl_all), value = TRUE)
-    if (length(iv_names) >= 2) {
-      nested_iv <- coef_nl_all[iv_names[1:2]]
-      nested_iv_valid <- all(nested_iv > 0 & nested_iv <= 1)
-    }
-    log_msg(sprintf("  Inclusive-value params: %s = %.3f, %s = %.3f (valid [0,1]: %s)",
-                    iv_names[1], nested_iv[1], iv_names[2], nested_iv[2],
-                    nested_iv_valid))
-    log_msg("  Key nested logit coefficients:")
-    for (nm in names(coef_nl_all)) {
-      if (grepl("warmth|blame|iv", nm, ignore.case = TRUE)) {
-        log_msg(sprintf("    %-45s %8.4f", nm, coef_nl_all[nm]))
-      }
-    }
-  }
-} else {
-  log_msg("  NOTE: mlogit nested logit failed — will compute blame contrasts from main MNL only")
-  log_msg("  Reporting main MNL contrasts as comparison baseline")
-}
 
 # ---- Compute blame contrasts Δ_pp(S+A) at warmth = -1, 0, +1 SD ----
-# For both nested logit (if available) and main MNL (always)
-# Method: predict probability grid manually
+# Method: predict probability grid manually from main MNL fit
 
 compute_mnl_contrasts <- function(fit, pooled_df, warmth_vals = c(-1, 0, 1)) {
   # Reference respondent: means/modes of all controls
@@ -428,150 +314,6 @@ if (!is.null(mnl_main)) {
   }
 }
 
-# Nested logit contrasts (if available)
-nl_contrasts_df <- NULL
-if (!is.null(nested_fit)) {
-  nl_contrasts_df <- tryCatch({
-    # Build reference row from the *renamed* data so tool_config levels match
-    # the nested-logit fit.
-    ref_nl <- pooled_mlogit[1, , drop = FALSE]
-    ref_nl$party3       <- factor(names(sort(table(pooled_mlogit$party3), decreasing=TRUE)[1]),
-                                   levels = levels(pooled_mlogit$party3))
-    ref_nl$race_eth     <- factor(names(sort(table(pooled_mlogit$race_eth), decreasing=TRUE)[1]),
-                                   levels = levels(pooled_mlogit$race_eth))
-    ref_nl$ideo5_clean  <- median(pooled_mlogit$ideo5_clean, na.rm=TRUE)
-    ref_nl$educ_college <- as.integer(round(mean(pooled_mlogit$educ_college, na.rm=TRUE)))
-    ref_nl$age          <- mean(pooled_mlogit$age, na.rm=TRUE)
-    ref_nl$female       <- as.integer(round(mean(pooled_mlogit$female, na.rm=TRUE)))
-    ref_nl$newsint_attn <- mean(pooled_mlogit$newsint_attn, na.rm=TRUE)
-    ref_nl$exposure_index <- mean(pooled_mlogit$exposure_index, na.rm=TRUE)
-    ref_nl$posture_z    <- 0
-    ref_nl$year         <- as.integer(2024)
-
-    warmth_vals <- c(-1, 0, 1)
-    rows_nl <- list()
-    for (w in warmth_vals) {
-      ref_nl$warmth_z <- w
-      ref_nl$blame_china <- 0L
-      nd0 <- ref_nl; nd0$obs_id <- 99999L
-      nd1 <- ref_nl; nd1$blame_china <- 1L; nd1$obs_id <- 99999L
-
-      pp0_nl <- tryCatch({
-        nd0_idx <- mlogit::mlogit.data(as.data.frame(nd0),
-                                        choice="tool_config", shape="wide")
-        predict(nested_fit, newdata=nd0_idx)
-      }, error = function(e) NULL)
-
-      pp1_nl <- tryCatch({
-        nd1_idx <- mlogit::mlogit.data(as.data.frame(nd1),
-                                        choice="tool_config", shape="wide")
-        predict(nested_fit, newdata=nd1_idx)
-      }, error = function(e) NULL)
-
-      if (!is.null(pp0_nl) && !is.null(pp1_nl)) {
-        # "SA" replaces "S+A" in the renamed levels.
-        if (is.matrix(pp0_nl)) {
-          p0 <- pp0_nl[1,"SA"]; p1 <- pp1_nl[1,"SA"]
-        } else {
-          p0 <- unname(pp0_nl["SA"]); p1 <- unname(pp1_nl["SA"])
-        }
-        rows_nl[[length(rows_nl)+1]] <- data.frame(
-          warmth_sd = w, p0_SA = p0, p1_SA = p1,
-          delta_nl = p1 - p0, stringsAsFactors = FALSE
-        )
-      }
-    }
-    if (length(rows_nl) > 0) do.call(rbind, rows_nl) else NULL
-  }, error = function(e) {
-    log_msg(sprintf("  Nested logit contrast computation failed: %s", e$message))
-    NULL
-  })
-
-  if (!is.null(nl_contrasts_df)) {
-    log_msg("  Nested logit blame contrasts (Δ_pp S+A) at warmth = -1, 0, +1 SD:")
-    for (i in seq_len(nrow(nl_contrasts_df))) {
-      log_msg(sprintf("    warmth=%+d: P(S+A|b=0)=%.4f, P(S+A|b=1)=%.4f, Delta=%.4f",
-                      nl_contrasts_df$warmth_sd[i],
-                      nl_contrasts_df$p0_SA[i],
-                      nl_contrasts_df$p1_SA[i],
-                      nl_contrasts_df$delta_nl[i]))
-    }
-  }
-}
-
-# Build comparison table
-log_msg("")
-log_msg("  Building nested logit vs. main MNL comparison table ...")
-
-build_nested_comparison_table <- function(mnl_c, nl_c) {
-  warmth_labels <- c("$-1$ SD", "$0$ SD", "$+1$ SD")
-  rows <- list()
-  for (i in 1:3) {
-    mnl_delta <- if (!is.null(mnl_c) && nrow(mnl_c) >= i)
-      sprintf("%.4f", mnl_c$delta_pp_SA[i]) else "--"
-    nl_delta  <- if (!is.null(nl_c) && nrow(nl_c) >= i)
-      sprintf("%.4f", nl_c$delta_nl[i]) else "NE"  # NE = not estimated
-    rows[[i]] <- data.frame(
-      warmth = warmth_labels[i],
-      mnl_delta = mnl_delta,
-      nl_delta = nl_delta,
-      stringsAsFactors = FALSE
-    )
-  }
-  do.call(rbind, rows)
-}
-
-nl_compare_df <- build_nested_comparison_table(mnl_contrasts, nl_contrasts_df)
-
-# Write LaTeX table
-write_nested_tex <- function(df, nested_conv, convergence_note) {
-  lines <- c(
-    "\\begin{tabular}{lcc}",
-    "\\toprule",
-    "Warmth level & Main MNL $\\Delta_{pp}$(S+A) & Nested logit $\\Delta_{pp}$(S+A) \\\\",
-    "\\midrule"
-  )
-  for (i in seq_len(nrow(df))) {
-    lines <- c(lines, sprintf("%s & %s & %s \\\\",
-                              df$warmth[i], df$mnl_delta[i], df$nl_delta[i]))
-  }
-  lines <- c(lines, "\\bottomrule", "\\end{tabular}")
-  if (!is.null(convergence_note)) {
-    lines <- c(lines, sprintf("%% Note: %s", convergence_note))
-  }
-  lines
-}
-
-nested_conv_note <- if (is.null(nested_fit)) {
-  "Nested logit failed to converge via mlogit(); NE = not estimated. Main MNL estimates shown as reference."
-} else if (!nested_conv) {
-  "Nested logit: convergence not achieved (check estimates with caution)."
-} else if (isFALSE(nested_iv_valid)) {
-  sprintf(paste0(
-    "Nested logit converges (logLik=%.1f, unweighted) with nests ",
-    "{Neither, S+A} / {Sanctions-only, Action-only}, but inclusive-value ",
-    "parameters lambda_1=%.2f, lambda_2=%.2f fall outside the [0,1] range ",
-    "required for a proper nested-logit interpretation. The IIA rejection ",
-    "therefore does not admit a clean nested-logit representation under this ",
-    "nesting; we report the main MNL Delta_pp(S+A) as the benchmark. ",
-    "NE = not estimated due to bound violation."),
-    nested_loglik, nested_iv[1], nested_iv[2])
-} else {
-  sprintf("Nested logit converges (logLik=%.1f, unweighted) with lambda_1=%.2f, lambda_2=%.2f.",
-          nested_loglik, nested_iv[1], nested_iv[2])
-}
-
-nested_tex <- write_nested_tex(nl_compare_df, nested_conv, nested_conv_note)
-writeLines(nested_tex, here("prism", "tables", "app_tab_nested_logit.tex"))
-log_msg("  Saved: app_tab_nested_logit.tex")
-log_msg(sprintf("  TASK 1 RESULT: nested logit %s",
-                if (!is.null(nested_fit) && nested_conv && isTRUE(nested_iv_valid))
-                  "CONVERGED (valid IV params)"
-                else if (!is.null(nested_fit) && nested_conv)
-                  sprintf("CONVERGED but IV params out of [0,1]: lambda_1=%.2f lambda_2=%.2f",
-                          nested_iv[1], nested_iv[2])
-                else if (!is.null(nested_fit)) "DID NOT CONVERGE"
-                else "FAILED (mlogit error)"))
 if (!is.null(mnl_contrasts)) {
   log_msg(sprintf("  Main MNL Δ_pp(S+A): w=-1: %.4f, w=0: %.4f, w=+1: %.4f",
                   mnl_contrasts$delta_pp_SA[1],
@@ -1431,25 +1173,14 @@ log_msg("=====================================================================")
 log_msg("  SUMMARY OF RESULTS")
 log_msg("=====================================================================")
 log_msg("")
-log_msg("  TASK 1 (C-2a) — Nested logit:")
-log_msg(sprintf("    Status: %s",
-                if (!is.null(nested_fit) && nested_conv) "CONVERGED"
-                else if (!is.null(nested_fit)) "DID NOT CONVERGE"
-                else "FAILED (mlogit error)"))
+log_msg("  Main MNL blame contrasts (used by Task 3 / M-2 below):")
 if (!is.null(mnl_contrasts)) {
-  log_msg(sprintf("    Main MNL Δ_pp(S+A): warmth=-1: %.4f, warmth=0: %.4f, warmth=+1: %.4f",
+  log_msg(sprintf("    Δ_pp(S+A): warmth=-1: %.4f, warmth=0: %.4f, warmth=+1: %.4f",
                   mnl_contrasts$delta_pp_SA[1],
                   mnl_contrasts$delta_pp_SA[2],
                   mnl_contrasts$delta_pp_SA[3]))
 }
-if (!is.null(nl_contrasts_df)) {
-  log_msg(sprintf("    Nested logit Δ_pp(S+A): warmth=-1: %.4f, warmth=0: %.4f, warmth=+1: %.4f",
-                  nl_contrasts_df$delta_nl[1],
-                  nl_contrasts_df$delta_nl[2],
-                  nl_contrasts_df$delta_nl[3]))
-} else {
-  log_msg("    Nested logit Δ_pp: NE (model failed)")
-}
+log_msg("  (C-2a nested logit removed — IIA addressed via text in Phase 5b item 2)")
 log_msg("")
 log_msg("  TASK 2 (C-3) — MI Phase 5 fix:")
 for (s in ALL_PROBES) {
@@ -1491,7 +1222,6 @@ log_msg("    NOT a data bug. See log for full explanation.")
 log_msg("")
 log_msg("  Output files:")
 for (f in c(
-  "prism/tables/app_tab_nested_logit.tex",
   "prism/tables/app_tab_mi_phase5_v2.tex",
   "prism/tables/app_tab_mi_diagnostics_v2.tex",
   "prism/tables/app_tab_design_mnl_prob.tex",

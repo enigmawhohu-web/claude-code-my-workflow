@@ -61,16 +61,16 @@ The paper has made genuine progress. The domain referee is ready to accept with 
 
 ## Phase 5 Revision Plan
 
-### Phase 5a: NEW ANALYSIS (coder)
-1. **Nested logit** — estimate {Neither, S+A} nest vs {S-only, A-only} nest; compare blame contrasts at probability scale to main MNL → `app_tab_nested_logit.tex`
-2. **Design-based SEs on probability scale** — delta method or margins from binary svyglm; produce direct SE comparison table → update/extend `app_tab_design_mnl.tex`
-3. **MI Phase 5 target probe fix** — diagnose convergence failure; implement alternative (impute predictors only, recompute is_SA from MNL probs; or hot-deck); report Δ_d under MI → update `app_tab_mi_phase5.tex`
-4. **MI df cap** — apply Barnard-Rubin df cap at complete-data df (n-k ≈ 4,218) in diagnostics table → update `app_tab_mi_diagnostics.tex`
-5. **Within-wave/triple inconsistency** — reconcile 0.096 vs 0.104 (2024 coefficient across tables); confirm same sample and covariates → update one or both tables
+### Phase 5a: NEW ANALYSIS (coder) — UPDATED 2026-04-22
+1. ~~**Nested logit**~~ **REMOVED** — per user direction, nested logit is too econometric for the political-science / area-studies audience (POQ, JCC, ISQ). The IIA concern is addressed via revised text in Phase 5b item 2 instead. The mlogit fit also failed to converge in the prototype run, reinforcing the decision.
+2. **Design-based SEs on probability scale** — delta method or margins from binary svyglm; produce direct SE comparison table → `app_tab_design_mnl_prob.tex` ✅
+3. **MI Phase 5 target probe fix** — diagnose convergence failure; implement alternative (impute predictors only, recompute is_SA from MNL probs; or hot-deck); report Δ_d under MI → `app_tab_mi_phase5_v2.tex` ✅
+4. **MI df cap** — apply Barnard-Rubin df cap at complete-data df (n-k ≈ 4,218) in diagnostics table → `app_tab_mi_diagnostics_v2.tex` ✅
+5. **Within-wave/triple inconsistency** — reconcile 0.096 vs 0.104 (2024 coefficient across tables); confirm same sample and covariates → log-only (no new table) ✅
 
 ### Phase 5b: CLARIFICATION + MINOR (writer)
 1. **M-2** — Measurement Appendix with verbatim wording (warmth, blame battery, posture items, tool checklist, 8 probes) — read codebook PDFs
-2. **IIA text fix** — correct "confirms distinctiveness" interpretation; explain what rejection means (proportional-substitution violation) and why MNL results are still informative; add nested logit comparison once available
+2. **IIA text fix (revised, no nested logit)** — correct the "confirms distinctiveness" misinterpretation. Replace with: rejection of IIA implies a non-proportional substitution structure (i.e., dropping one option would shift probability mass unevenly across the others) rather than independence per se; main MNL estimates therefore remain informative as conditional associations within the four-alternative menu, but should not be extrapolated to settings where the option set changes. No nested-logit alternative is presented — the conceptual clarification is the fix.
 3. **D-1** — Note design-based interaction p=0.240 in main text §4.2 or footnote
 4. **D-2** — Add placebo p-value in main text §5 ¶2
 5. **D-4** — Add sentence in Discussion engaging 2025 amplification (post-tariff context)
