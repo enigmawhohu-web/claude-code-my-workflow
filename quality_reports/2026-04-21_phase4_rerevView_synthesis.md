@@ -72,10 +72,10 @@ The paper has made genuine progress. The domain referee is ready to accept with 
 1. **M-2** — Measurement Appendix with verbatim wording (warmth, blame battery, posture items, tool checklist, 8 probes) — read codebook PDFs
 2. **IIA text fix (revised, no nested logit)** — correct the "confirms distinctiveness" misinterpretation. Replace with: rejection of IIA implies a non-proportional substitution structure (i.e., dropping one option would shift probability mass unevenly across the others) rather than independence per se; main MNL estimates therefore remain informative as conditional associations within the four-alternative menu, but should not be extrapolated to settings where the option set changes. No nested-logit alternative is presented — the conceptual clarification is the fix.
 3. **D-1** — Note design-based interaction p=0.240 in main text §4.2 or footnote
-4. **D-2** — Add placebo p-value in main text §5 ¶2
-5. **D-4** — Add sentence in Discussion engaging 2025 amplification (post-tariff context)
-6. **M-4** — Add TOST power note in footnote
-7. **D-3** — Clarify acquiescence-count item definition in table notes
+4. **D-2** — Add placebo p-value in main text §5 ¶2 ✅ (already present: "p = 0.758" in line 323; verified 2026-04-22)
+5. **D-4** — Add sentence in Discussion engaging 2025 amplification (post-tariff context) ✅ (§5 ¶3, line 328 — wave-specific b values + descriptive vs. statistical attribution caveat)
+6. **M-4** — Add TOST power note in footnote ✅ (§3 footnote at line 156 — effective n, clustering, robustness across bound choices)
+7. **D-3** — Clarify acquiescence-count item definition in table notes ✅ (Appendix Table app_acquiescence note expanded — definition + exclusion of S+A constituent items + within-wave computation)
 
 ---
 
