@@ -99,6 +99,7 @@ The Orchestrator selects agents based on what the task requires:
 | Data sourcing | explorer + explorer-critic |
 | Data engineering | data-engineer + coder-critic |
 | Identification strategy | strategist + strategist-critic |
+| Formal theory (assumptions, theorems, proofs) | theorist + theorist-critic |
 | R/Stata/Python scripts | coder + coder-critic |
 | Paper manuscript | writer + writer-critic |
 | Peer review | Orchestrator → domain-referee + methods-referee |
@@ -236,9 +237,18 @@ All skills in the reference below work without pipeline context when invoked dir
 ## 5. Context Management
 
 ### General Principles
-- Prefer auto-compression over `/clear`
+- Prefer intentional `/checkpoint` + `/compact` at natural stopping points over letting auto-compression summarize for you
 - Save important context to disk before it's lost
 - `/clear` only when context is genuinely polluted
+
+### Compaction Discipline
+
+Borrowed from Goldsmith-Pinkham's Claude Code for Economists workflow:
+
+- **Manual `/compact` before natural stopping points**, not at the threshold. You control what gets summarized.
+- **Aim for 5–10 turn focused sessions.** Long sessions drift; short, scoped sessions keep output sharp.
+- **Start fresh between phases.** Don't carry "discovery residue" into execution.
+- **Before `/compact` or session end, run `/checkpoint`.** That persists state to memory, SESSION_REPORT, and the research journal — so the next session reads real context, not an auto-summary.
 
 ### Context Survival Strategy
 
