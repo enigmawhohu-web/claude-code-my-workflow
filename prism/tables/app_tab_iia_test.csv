@@ -1,7 +1,0 @@
-Item,Result
-Method,Coefficient stability comparison (mlogit unavailable)
-Max coef. shift (heuristic),0.0335
-Degrees of freedom,<e2><80><94>
-p-value,<e2><80><94>
-Verdict,Stable (max shift <= 0.10); formal IIA test not run
-Note,Heuristic proxy only; formal Hausman-McFadden test requires mlogit package.
