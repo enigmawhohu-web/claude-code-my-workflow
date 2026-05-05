@@ -1,0 +1,237 @@
+\documentclass[12pt,letterpaper]{article}
+
+% --- Preamble (shared with main manuscript) ---
+\input{manuscript-preamble}
+
+% --- Metadata ---
+\title{Online Supplementary Material\\
+\large When Warm Feelings Harden: Fentanyl Crisis Blame and U.S.\ Public Opinion on China}
+\author{Junyang Hu}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\noindent This online supplement contains robustness checks and supporting analyses referenced in the main article. Tables and figures are numbered with an ``A'' prefix and correspond to the references in the main text.
+
+\newpage
+\setcounter{page}{1}
+
+\appendix
+\renewcommand{\thetable}{A\arabic{table}}
+\setcounter{table}{0}
+\renewcommand{\thefigure}{A\arabic{figure}}
+\setcounter{figure}{0}
+
+\section{Supplementary Tables and Figures}
+\label{sec:appendix}
+
+% --- Phase 3 Appendix ---
+\subsection{Robustness: Alternative Blame Measure and Ordinal Models}
+
+Table~\ref{tab:phase3_panel_b} (in the main text) replicates the posture models using \texttt{blame\_china\_alt}, the single-choice ``most responsible'' item. The warmth $\times$ blame interaction is attenuated but retains the expected sign.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Robustness: Ordinal Logit on Individual Posture Items}
+\label{tab:app_olr}
+\input{tables/app_tab_phase3_svyolr_q15items}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Survey-weighted ordinal logistic regressions (\texttt{svyolr}). Each row reports a separate model for one of four posture items (scale 1--5). Coefficients reflect the log-odds of a higher response. Standard errors are design-based. $n$ is unweighted. * $p<0.10$, ** $p<0.05$, *** $p<0.01$.}
+\end{table}
+
+Table~\ref{tab:phase3_r1} reports replacement robustness models substituting the behavior index for blame in the interaction term.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Robustness: Behavior Index in Place of Blame}
+\label{tab:phase3_r1}
+\input{tables/app_tab_phase3_r1_models}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Survey-weighted OLS. Dependent variable: standardized foreign-policy posture index (\texttt{posture\_z}). Columns substitute the behavior index (\texttt{behavior\_index\_z}) for the binary blame variable as the conditioning variable. Standard errors are design-based. * $p<0.05$, ** $p<0.01$, *** $p<0.001$.}
+\end{table}
+
+% --- Acquiescence and Full Coefficients ---
+\subsection{Robustness: Acquiescence and Full Coefficients}
+
+Acquiescence-controlled estimates of the blame effect on $\hat{P}(\text{S+A})$ are reported in Table~\ref{tab:app_acquiescence}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Acquiescence-Adjusted Blame Effects: With and Without Endorsement-Count Control}
+\label{tab:app_acquiescence}
+\input{tables/app_tab_phase4_acquiescence}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Survey-weighted multinomial logit marginal effects. Each row reports the blame-driven shift in $\hat{P}(\text{S+A})$ at the indicated warmth level, with and without endorsement-count control for acquiescent response style. The endorsement-count covariate is the count of items the respondent endorsed across the broader policy-tool checklist, \emph{excluding} the two items (sanctions, action) that define the S+A tool configuration to avoid mechanical correlation with the dependent variable; counts are computed within wave from the items shared across both 2024 and 2025 instruments. Higher values indicate a stronger general tendency to endorse listed items independent of any specific position on China policy. The endorsement-count control attenuates the blame effect on $P(\text{S+A})$ by approximately 38\%.}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Design-Based Sensitivity Check: MNL S+A Coefficients (Log-Odds Scale)}
+\label{tab:app_design_mnl}
+\input{tables/app_tab_design_mnl}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Design-based standard errors computed via \texttt{svyglm()} binary contrasts (S+A vs.\ all other categories) on the log-odds scale. The binary-contrast approach approximates the design-based equivalent of the full MNL. Point estimates are consistent with the main multinomial specification. The blame main effect on S+A is robust ($b = 2.640$, $p < 0.001$); the warmth $\times$ blame interaction is not statistically distinguishable from zero under design-based inference ($b = 0.134$, $p = 0.240$).}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/app_fig_placebo_sanctionsXintlcoop.pdf}
+  \caption{Placebo test: Interaction plot for sanctions $\times$ international cooperation composite as dependent variable. The placebo pairing shows a comparable blame-driven shift ($\Delta_{\text{pp}} = 0.311$ at warmth $= +1$\,SD), indicating that the S+A effect is not fully specific to fentanyl cooperation.}
+  \label{fig:app_placebo}
+\end{figure}
+
+% --- Phase 5 Appendix ---
+\subsection{Robustness: Full Panorama, Pairwise Divergence, and Alternative Specifications}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Eight-Probe Panorama: S+A Minus Sanctions-Only Contrasts Across All Scenarios}
+\label{tab:app_panorama}
+\footnotesize
+\input{tables/app_tab_phase5_panorama}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Survey-weighted stacked OLS. Each row reports the blame-driven S+A minus Sanctions-only contrast ($\Delta_s$) for one of eight probes, among warm respondents ($\texttt{warmth\_z} = +1$\,SD). Standard errors are clustered at the respondent level. 95\% confidence intervals reported. $p$-values are two-sided.}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Pairwise Divergence Tests: Target Probe vs.\ Boundary Probes (BH-FDR Corrected)}
+\label{tab:app_divergence}
+\input{tables/app_tab_phase5_divergence}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Each row reports a pairwise contrast between $\Delta_d$ (probe $d$, fentanyl cooperation) and one boundary probe. $p$-values are two-sided; $p_{\text{FDR}}$ applies the Benjamini--Hochberg false discovery rate correction across seven comparisons. Standard errors are clustered at the respondent level.}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Alternative Specification: Continuous $\hat{P}(\text{S+A})$ as Dependent Variable}
+\label{tab:app_phat}
+\input{tables/app_tab_phase5_phat_sa}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Blame-driven shifts in MNL-predicted $\hat{P}(\text{S+A})$ (continuous, replacing the binary S+A classifier). Compare to main estimates in Table~\ref{tab:phase5_contrasts}.}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/fig_coef_forest_interaction.pdf}
+  \caption{Coefficient forest plot for the warmth $\times$ blame interaction across model specifications. Point estimates with 95\% confidence intervals.}
+  \label{fig:app_forest}
+\end{figure}
+
+% --- Cross-Wave Robustness ---
+\subsection{Cross-Wave Robustness: Interaction Stability Across Survey Years}
+\label{sec:app_crosswave}
+
+The pooled models in the main text include year fixed effects to account for mean-level differences across the 2024 and 2025 waves. Table~\ref{tab:app_within_wave} reports wave-specific estimates confirming that the warmth $\times$ blame interaction is statistically significant in both the 2024 and 2025 waves individually.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Within-Wave Replication: Warmth $\times$ Blame Interaction by Survey Year}
+\label{tab:app_within_wave}
+\input{tables/app_tab_within_wave}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Survey-weighted OLS estimated separately for each wave and pooled with year fixed effects. The warmth $\times$ blame interaction is statistically significant in both waves individually ($b_{2024} = 0.096$, $p = 0.037$; $b_{2025} = 0.185$, $p < 0.001$). The 2025 coefficient is larger, consistent with the post-tariff political context heightening the conditional pattern.}
+\end{table}
+
+% --- NA-1: MNL Post-Treatment Sensitivity ---
+\subsection{Post-Treatment Sensitivity: Total-Effect MNL Specification}
+\label{sec:app_posttx}
+
+The main multinomial logit specification controls for \texttt{posture\_z}, which is a post-treatment covariate with respect to warmth and blame. Conditioning on a post-treatment variable can, in principle, bias the estimated effect of the primary predictors by absorbing part of the treatment path. Table~\ref{tab:app_mnl_total_effect} compares the within-posture specification (\texttt{posture\_z} included) against a total-effect specification that omits \texttt{posture\_z} entirely. The blame-driven shift in $\hat{P}(\text{S+A})$ is $\Delta = 0.306$ ($SE = 0.029$) under the within-posture specification and $\Delta = 0.305$ ($SE = 0.028$) under the total-effect specification at warmth $= +1$ SD; the difference between the two contrasts is less than 0.001. Post-treatment conditioning does not materially alter the estimated blame effect on tool configuration, confirming that the within-posture estimates carry the same substantive interpretation as the total-effect estimates. Standard errors in this table are Hessian-based (model-based) and are not directly comparable to design-based standard errors reported in the main results.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Post-Treatment Sensitivity: Within-Posture vs.\ Total-Effect MNL Specification}
+\label{tab:app_mnl_total_effect}
+\scriptsize
+\input{tables/app_tab_mnl_total_effect}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Each panel compares the within-posture specification (\texttt{posture\_z} included as a control) against the total-effect specification (\texttt{posture\_z} omitted). The upper panel reports MNL log-odds coefficients on the warmth $\times$ blame interaction; the lower panel reports predicted probability contrasts ($\Delta_{\text{pp}}$) for the S+A outcome at three warmth levels. Standard errors are Hessian-based (model-based) and are not directly comparable to design-based standard errors in the main tables. The reference category is Neither.}
+\end{table}
+
+% --- NA-2: Formal Placebo Contrast ---
+\subsection{Formal Placebo Contrast: Main vs.\ Placebo Blame Effect}
+\label{sec:app_placebo_contrast}
+
+Section~\ref{sec:discussion} notes that the placebo MNL (using sanctions $\times$ international cooperation as the dependent variable) produces a blame-driven shift comparable in magnitude to the main specification. Table~\ref{tab:app_placebo_contrast} formalizes this comparison. The main blame contrast is $\Delta_d = 0.282$ ($SE = 0.091$), derived from the eight-probe specificity model (probe $d$, fentanyl cooperation, among S+A and Sanctions-only respondents). The placebo blame contrast---$\Delta_{\text{pp}}$(S+A) at warmth $= +1$ SD from the sanctions $\times$ international cooperation model---is $0.311$ ($SE = 0.027$). The difference between the two contrasts is $-0.029$ ($SE = 0.095$, $t = -0.31$, $p = 0.758$, 95\% CI $[-0.216, 0.157]$). The two estimates are statistically indistinguishable, consistent with both configurations being engagement-compatible pressure packages that are similarly activated by blame attribution. This result supports the domain-concentration interpretation of issue-bounded conditionality (IBC) but does not support a stronger tool-specificity interpretation. The combined standard error in this table assumes independence of the two models; because respondents overlap across both estimation samples, this assumption is anti-conservative; the reported $p$-value understates uncertainty and should be treated as a lower bound.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Formal Placebo Contrast: Main vs.\ Placebo Blame Effects on S+A Probability}
+\label{tab:app_placebo_contrast}
+\input{tables/app_tab_placebo_contrast}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} $\Delta_d$ is the S+A-minus-S-only adjusted mean contrast for probe $d$ (fentanyl cooperation) from the eight-probe specificity model (Table~\ref{tab:phase5_contrasts}). $\Delta_{\text{pp,placebo}}$ is the predicted-probability blame contrast for the sanctions $\times$ international cooperation outcome at warmth $= +1$ SD from the placebo multinomial logit. The combined SE assumes independence of the two models; overlap in respondent samples may understate true uncertainty. Degrees of freedom use the Welch-Satterthwaite approximation.}
+\end{table}
+
+% --- NA-3: IIA Formal Test ---
+\subsection{Independence of Irrelevant Alternatives: Hausman--McFadden Tests}
+\label{sec:app_iia}
+
+The multinomial logit assumes that the relative odds between any two alternatives are independent of the presence of other alternatives (IIA). Table~\ref{tab:app_iia_formal} reports Hausman-McFadden formal tests for each alternative. IIA is rejected for the Neither and S+A categories ($\chi^2 = 1017.6$ and $\chi^2 = 1257.5$ respectively, both $p < 0.001$). It is not rejected for Sanctions-only ($\chi^2 = 19.4$, $p = 0.989$) or Action-only ($\chi^2 = -3.5$, $p = 1.000$). The negative chi-square value for Action-only arises when the restricted-model variance--covariance matrix is not positive definite, a known property of the Hausman-McFadden procedure that indicates no evidence against IIA for that alternative.
+
+An IIA rejection means that removing one alternative from the choice set would redistribute its probability mass non-proportionally across the remaining alternatives. It does not mean the multinomial logit is invalid. The MNL coefficients and predicted probabilities reported in the main text are therefore interpreted as conditional associations within the four-alternative menu actually presented to respondents---descriptions of how blame and warmth co-vary with the chosen tool configuration in this choice environment---rather than as structural preferences extrapolable to a different option set. The rejection pattern is also consistent with the theoretical framing of the main article: S+A and Neither occupy distinct attitudinal regions, whereas Sanctions-only and Action-only behave as closer substitutes within the punitive--cooperative space.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{IIA Formal Tests: Hausman-McFadden Statistic for Each Alternative}
+\label{tab:app_iia_formal}
+\input{tables/app_tab_iia_formal}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Hausman-McFadden IIA test. Each row tests IIA by dropping one alternative from the choice set and comparing restricted versus full-model coefficient estimates. $\chi^2$ values with negative sign indicate that the variance--covariance difference matrix is not positive definite, interpreted as no evidence against IIA. $p$-values are computed from the $\chi^2$ distribution with $df = 36$.}
+\end{table}
+
+% --- NA-4: Multiple Imputation Robustness ---
+\subsection{Multiple Imputation Robustness Check}
+\label{sec:app_mi}
+
+Listwise deletion on ideology (\texttt{ideo5\_clean}), the primary source of missing data, reduces the analytic sample from 5,000 to 4,234 respondents. To assess whether this selective attrition materially affects the main interaction estimate, Table~\ref{tab:app_mi_robustness} compares the complete-case estimate against a multiple imputation (MI) estimate obtained using Predictive Mean Matching with $m = 10$ imputations (\texttt{mice} package). The MI procedure uses frequency-weighted \texttt{lm()} as an approximation to \texttt{svyglm()} because \texttt{svyglm} is not directly compatible with the \texttt{mice} pooling rules; the design-based standard error from the complete-case \texttt{svyglm} model remains the authoritative specification. The complete-case estimate is $b = 0.134$ ($SE = 0.035$); the MI-pooled estimate is $b = 0.123$ ($SE = 0.026$), an attenuation of approximately 8\%. The fraction of missing information (FMI) is 0.001, indicating that missing data contributes negligible additional uncertainty once imputed. The missing-at-random (MAR) assumption required for valid MI is plausible given that missingness is concentrated in a single covariate and the imputation model includes all observed predictors. These results show that the complete-case warmth $\times$ blame interaction is not an artifact of listwise deletion.
+
+Table~\ref{tab:app_mi_phase4} reports pooled MI estimates for the multinomial logit predicted probabilities; Table~\ref{tab:app_mi_phase5} reports the eight-probe specificity contrasts under full-sample imputation. FMI is negligible ($\approx 0.001$) across all key estimates.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Multiple Imputation Robustness: Warmth $\times$ Blame Interaction Coefficient}
+\label{tab:app_mi_robustness}
+\footnotesize
+\input{tables/app_tab_mi_robustness}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} The complete-case estimate uses survey-weighted \texttt{svyglm()} with design-based standard errors; this is the authoritative specification. The MI estimate uses frequency-weighted \texttt{lm()} pooled across $m = 10$ imputations via Predictive Mean Matching (\texttt{mice}). FMI = fraction of missing information. $N = 4{,}234$ (complete-case); $N = 5{,}000$ (MI, full analytic sample).}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Multiple Imputation Robustness: Multinomial Logit Predicted Probabilities}
+\label{tab:app_mi_phase4}
+\input{tables/app_tab_mi_phase4}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Pooled MI estimates ($m = 10$ imputations, PMM). Predicted probabilities for the S+A outcome at warmth $= \pm 1$ SD under complete-case and MI specifications. FMI = fraction of missing information.}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Multiple Imputation Robustness: Eight-Probe Specificity Contrasts}
+\label{tab:app_mi_phase5}
+\input{tables/app_tab_mi_phase5_v2}
+\par\vspace{0.5ex}
+{\footnotesize\textit{Notes.} Pooled MI estimates ($m = 10$ imputations, PMM) for the stacked-OLS probe contrasts using Approach B (impute predictors only; recompute the binary $\mathbf{1}\{\text{tool} = \text{S+A}\}$ outcome from the multinomial-logit predicted probabilities within each imputation). Approach B was adopted after the original MI implementation produced no estimates for individual probe contrasts because the imputed binary outcome was a constant within several imputations, causing \texttt{lm()} to drop the predictor. The target probe ($d$, fentanyl cooperation) shows the largest contrast under both complete-case and MI specifications. FMI = fraction of missing information.}
+\end{table}
+
+\end{document}
